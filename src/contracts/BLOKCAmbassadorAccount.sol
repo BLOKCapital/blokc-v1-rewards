@@ -54,9 +54,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 
-
 contract BLOKCAmbassadorAccount is Initializable {
-
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -83,7 +81,6 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         once in {initialize} and never updated.
     uint64 public unlockTimestamp;
 
-
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -91,7 +88,7 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @notice Emitted when the ambassador redirects the account's voting
     ///         power to a new delegatee via {reDelegate}.
     /// @param to The new delegatee chosen by the ambassador.
-    event Redelegated( address indexed to);
+    event Redelegated(address indexed to);
 
     /// @notice Emitted when the ambassador sweeps the account's full
     ///         $BLOKC balance to themselves via {withdrawTokensAll}.
@@ -148,7 +145,6 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         address — $BLOKC is never recoverable through that path.
     error InvalidERC20Token();
 
-
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -157,11 +153,9 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         initialized directly.
     /// @dev    All real ambassador accounts are EIP-1167 clones of this
     ///         implementation; only those clones go through {initialize}.
-    constructor(){
+    constructor() {
         _disableInitializers();
     }
-
-
 
     /*//////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -183,32 +177,28 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///                         Must be non-zero.
     /// @param _unlockTimestamp Unix timestamp at which $BLOKC becomes
     ///                         withdrawable. Must be non-zero.
-    function initialize(address _ambassador, address _token, uint64 _unlockTimestamp)external initializer{
-
+    function initialize(address _ambassador, address _token, uint64 _unlockTimestamp) external initializer {
         //some basic sanity checks
 
-        if(_ambassador == address(0)){
+        if (_ambassador == address(0)) {
             revert ZeroAddress();
         }
 
-        if (_token ==address(0)){
-
+        if (_token == address(0)) {
             revert ZeroAddress();
-
         }
-        if (_unlockTimestamp == 0){
+        if (_unlockTimestamp == 0) {
             revert ZeroTimestamp();
         }
 
-        ambassador= _ambassador;
-        token= _token;
-        unlockTimestamp= _unlockTimestamp;
+        ambassador = _ambassador;
+        token = _token;
+        unlockTimestamp = _unlockTimestamp;
 
         emit Initialized(ambassador, token, unlockTimestamp);
 
         IVotes(token).delegate(ambassador);
     }
-
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
@@ -221,8 +211,8 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         state-mutating operations on the account itself are gated.
     ///         {onlyAmbassador} is used in place of an `onlyDAO` pattern
     ///         intentionally: ambassador accounts require no DAO interaction.
-    modifier onlyAmbassador(){
-        if(msg.sender != ambassador){
+    modifier onlyAmbassador() {
+        if (msg.sender != ambassador) {
             revert NotAnAmbassador();
         }
         _;
@@ -233,8 +223,8 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @dev    Reverts with {NoTimelineUnlockedYet} when
     ///         `block.timestamp < unlockTimestamp`. Succeeds at exactly
     ///         `block.timestamp == unlockTimestamp`.
-    modifier onlyAfterUnlockTimestamp(){
-        if (unlockTimestamp > block.timestamp){
+    modifier onlyAfterUnlockTimestamp() {
+        if (unlockTimestamp > block.timestamp) {
             revert NoTimelineUnlockedYet();
         }
 
@@ -250,15 +240,13 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @dev    Used by {reDelegate}. Reverts with {ZeroAddress} on a zero
     ///         delegatee.
     /// @param _to The new delegatee for the account's $BLOKC votes.
-    function _delegate(address _to) internal{
-
-        if (_to == address(0)){
+    function _delegate(address _to) internal {
+        if (_to == address(0)) {
             revert ZeroAddress();
         }
 
         IVotes(token).delegate(_to);
     }
-
 
     /*//////////////////////////////////////////////////////////////
                           AMBASSADOR ACTIONS
@@ -271,7 +259,7 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         {Redelegated} on success.
     /// @param _to The new delegatee. Must be non-zero (enforced by
     ///            {_delegate}).
-    function reDelegate (address _to) external onlyAmbassador{
+    function reDelegate(address _to) external onlyAmbassador {
         _delegate(_to);
 
         emit Redelegated(_to);
@@ -290,23 +278,23 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///                   non-zero.
     /// @param amount     Amount to transfer. Must be non-zero and not
     ///                   exceed this account's balance of `ERC20token`.
-    function recoverERC20(address ERC20token, address to, uint256 amount)external onlyAmbassador{
-        if (ERC20token == address(0)){
+    function recoverERC20(address ERC20token, address to, uint256 amount) external onlyAmbassador {
+        if (ERC20token == address(0)) {
             revert ZeroAddress();
         }
-        if (ERC20token == token){
+        if (ERC20token == token) {
             revert InvalidERC20Token();
         }
 
-        if (to == address(0)){
+        if (to == address(0)) {
             revert ZeroAddress();
         }
 
-        if (amount == 0){
+        if (amount == 0) {
             revert ZeroAmount();
         }
 
-        if (amount > IERC20(ERC20token).balanceOf(address(this))){
+        if (amount > IERC20(ERC20token).balanceOf(address(this))) {
             revert InsufficientBalance();
         }
 
@@ -324,21 +312,21 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @param to     Recipient address. Must be non-zero.
     /// @param amount Amount of $BLOKC to transfer. Must be non-zero and
     ///               not exceed this account's $BLOKC balance.
-    function withdraw(address to, uint256 amount) external onlyAmbassador onlyAfterUnlockTimestamp{
-        if (to == address(0)){
+    function withdraw(address to, uint256 amount) external onlyAmbassador onlyAfterUnlockTimestamp {
+        if (to == address(0)) {
             revert ZeroAddress();
         }
-        if (amount == 0){
+        if (amount == 0) {
             revert ZeroAmount();
         }
-        if (IERC20(token).balanceOf(address(this)) == 0){
+        if (IERC20(token).balanceOf(address(this)) == 0) {
             revert InsufficientBalance();
         }
-        if (amount > IERC20(token).balanceOf(address(this))){
+        if (amount > IERC20(token).balanceOf(address(this))) {
             revert InsufficientBalance();
         }
 
-        IERC20(token).safeTransfer(to ,amount );
+        IERC20(token).safeTransfer(to, amount);
 
         emit Withdrawn(to, amount);
     }
@@ -350,14 +338,13 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         to the ambassador via {onlyAmbassador}. The destination is
     ///         always the ambassador by design — for arbitrary recipients
     ///         use {withdraw}. Emits {AllTokensWithdrawn}.
-    function withdrawTokensAll() external onlyAmbassador onlyAfterUnlockTimestamp{
-
-        if (IERC20(token).balanceOf(address(this)) == 0){
+    function withdrawTokensAll() external onlyAmbassador onlyAfterUnlockTimestamp {
+        if (IERC20(token).balanceOf(address(this)) == 0) {
             revert InsufficientBalance();
         }
 
         uint256 Currentbalance = IERC20(token).balanceOf(address(this));
-        if (Currentbalance == 0){
+        if (Currentbalance == 0) {
             revert InsufficientBalance();
         }
 
@@ -374,7 +361,7 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @dev    Convenience wrapper around
     ///         `IERC20(token).balanceOf(address(this))`.
     /// @return The account's current $BLOKC balance.
-    function balanceOf() external view returns (uint256){
+    function balanceOf() external view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -382,7 +369,7 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @dev    Verb-named alternative to the auto-generated public getter
     ///         for {unlockTimestamp}.
     /// @return The unlock timestamp (Unix seconds, uint64).
-    function getUnlockTimestamp() external view returns (uint64){
+    function getUnlockTimestamp() external view returns (uint64) {
         return unlockTimestamp;
     }
 
@@ -399,6 +386,5 @@ contract BLOKCAmbassadorAccount is Initializable {
     function timeUntilUnlock() external view returns (uint256) {
         return block.timestamp >= unlockTimestamp ? 0 : unlockTimestamp - block.timestamp;
     }
-
 }
 

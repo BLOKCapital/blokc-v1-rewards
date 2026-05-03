@@ -20,7 +20,7 @@ pragma solidity ^0.8.24;
  *         uniformly to every account this factory creates. Deploying a new
  *         factory is the only way to change the unlock date — and existing
  *         accounts continue to enforce the date they were initialized with.
- 
+
     ▗▄▄▖ ▗▖    ▗▄▖ ▗▖ ▗▖     ▗▄▄▖ ▗▄▖ ▗▄▄▖▗▄▄▄▖▗▄▄▄▖▗▄▖ ▗▖       ▗▄▄▄  ▗▄▖  ▗▄▖
     ▐▌ ▐▌▐▌   ▐▌ ▐▌▐▌▗▞▘    ▐▌   ▐▌ ▐▌▐▌ ▐▌ █    █ ▐▌ ▐▌▐▌       ▐▌  █▐▌ ▐▌▐▌ ▐▌
     ▐▛▀▚▖▐▌   ▐▌ ▐▌▐▛▚▖     ▐▌   ▐▛▀▜▌▐▛▀▘  █    █ ▐▛▀▜▌▐▌       ▐▌  █▐▛▀▜▌▐▌ ▐▌
@@ -35,8 +35,7 @@ pragma solidity ^0.8.24;
 
 // contract BLOKCAmbassadorFactory {
 //     //this factory is minimal proxy clone factory for BLOKCAmbassadorAccount
-//     //the only sole purpose of this factory is to deploy simple ambassador accounts 
+//     //the only sole purpose of this factory is to deploy simple ambassador accounts
 //     //using the special proxy to save gas on deployment and nothing more
-    
-    
+
 // }
