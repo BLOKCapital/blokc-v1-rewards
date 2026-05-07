@@ -343,7 +343,7 @@ contract BLOKCAmbassadorAccount is Initializable {
         }
 
         uint256 Currentbalance = IERC20(token).balanceOf(address(this));
-        
+
         IERC20(token).safeTransfer(ambassador, Currentbalance);
 
         emit AllTokensWithdrawn(ambassador, Currentbalance);
