@@ -337,18 +337,13 @@ contract BLOKCAmbassadorAccount is Initializable {
     ///         to the ambassador via {onlyAmbassador}. The destination is
     ///         always the ambassador by design — for arbitrary recipients
     ///         use {withdraw}. Emits {AllTokensWithdrawn}.
-    function withdrawTokensAll() external onlyAmbassador onlyAfterUnlockTimestamp {
-        if (IERC20(token).balanceOf(address(this)) == 0) {
-            revert InsufficientBalance();
-        }
-
-        uint256 Currentbalance = IERC20(token).balanceOf(address(this));
-
-        IERC20(token).safeTransfer(ambassador, Currentbalance);
-
-        emit AllTokensWithdrawn(ambassador, Currentbalance);
+    function withdrawTokensAll() external onlyAmbassador onlyAfterUnlockTimestamp {                                                                                                                                  
+        uint256 currentBalance = IERC20(token).balanceOf(address(this));                                                                                                                                             
+        if (currentBalance == 0) revert InsufficientBalance();                                                                                                                                                       
+                                                                                                                                                                                                                     
+        IERC20(token).safeTransfer(ambassador, currentBalance);                                                                                                                                                      
+        emit AllTokensWithdrawn(ambassador, currentBalance);
     }
-
     /*//////////////////////////////////////////////////////////////
                                  VIEWS
     //////////////////////////////////////////////////////////////*/
