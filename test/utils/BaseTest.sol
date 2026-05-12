@@ -49,13 +49,13 @@ abstract contract BaseTest is Test, Events {
 
         // 2. Build the labelled user set.
         users = Users({
-            deployer:        _user("deployer"),
-            ambassador:      _user("ambassador"),
+            deployer: _user("deployer"),
+            ambassador: _user("ambassador"),
             otherAmbassador: _user("otherAmbassador"),
-            attacker:        _user("attacker"),
-            recipient:       _user("recipient"),
-            delegatee:       _user("delegatee"),
-            goodSamaritan:   _user("goodSamaritan")
+            attacker: _user("attacker"),
+            recipient: _user("recipient"),
+            delegatee: _user("delegatee"),
+            goodSamaritan: _user("goodSamaritan")
         });
 
         // 3. Deploy rails as the deployer for realistic msg.sender in traces.
@@ -67,11 +67,7 @@ abstract contract BaseTest is Test, Events {
         implementation = new BLOKCAmbassadorAccount();
         vm.label(address(implementation), "AccountImpl");
 
-        factory = new BLOKCAmbassadorFactory(
-            address(blokc),
-            address(implementation),
-            Constants.UNLOCK_TIMESTAMP
-        );
+        factory = new BLOKCAmbassadorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
         vm.label(address(factory), "Factory");
 
         vm.stopPrank();

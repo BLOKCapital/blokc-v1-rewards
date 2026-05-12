@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test } from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {BLOKCAmbassadorFactory} from "../../src/contracts/factory/BLOKCAmbassadorFactory.sol";
 import {BLOKCAmbassadorAccount} from "../../src/contracts/BLOKCAmbassadorAccount.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
@@ -11,7 +11,6 @@ import {Events} from "test/utils/Events.sol";
 import {Users} from "test/utils/Users.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
-
 
 /// @title  BLOKCAmbassadorFactoryTest
 /// @notice Unit tests for {BLOKCAmbassadorFactory}.
@@ -28,18 +27,18 @@ import {BaseTest} from "test/utils/BaseTest.sol";
 ///           - IDEMPOTENCY              : same caller twice, cross-caller, no-emit on return.
 ///           - MULTI-AMBASSADOR         : distinct ambassadors yield distinct accounts.
 contract BLOKCAmbassadorFactoryTest is BaseTest {
-   /*//////////////////////////////////////////////////////////////
-                                  HELPERS
-      //////////////////////////////////////////////////////////////*/
+    /*//////////////////////////////////////////////////////////////
+                                   HELPERS
+       //////////////////////////////////////////////////////////////*/
 
-      /// @notice Returns the deterministic account address the factory
-      ///         will (or has) deployed for `ambassador`.
-      /// @dev    Thin wrapper around
-      ///         {BLOKCAmbassadorFactory.predictAmbassadorAccount} used
-      ///         by every test that needs the predicted address.
-      /// @param  ambassador The ambassador to look up.
-      /// @return The CREATE2-derived account address.
-      function _predicted(address ambassador) internal view returns (address) {
+    /// @notice Returns the deterministic account address the factory
+    ///         will (or has) deployed for `ambassador`.
+    /// @dev    Thin wrapper around
+    ///         {BLOKCAmbassadorFactory.predictAmbassadorAccount} used
+    ///         by every test that needs the predicted address.
+    /// @param  ambassador The ambassador to look up.
+    /// @return The CREATE2-derived account address.
+    function _predicted(address ambassador) internal view returns (address) {
         return factory.predictAmbassadorAccount(ambassador);
     }
 
@@ -66,15 +65,13 @@ contract BLOKCAmbassadorFactoryTest is BaseTest {
     /// @dev    Uses a freshly deployed factory (not the inherited one)
     ///         so the assertions can be checked against known inputs.
     function test_constructor_setsImmutables() public {
-        BLOKCAmbassadorFactory factory = new BLOKCAmbassadorFactory(
-            address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP
-        );
+        BLOKCAmbassadorFactory factory =
+            new BLOKCAmbassadorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
         assertEq(factory.token(), address(blokc));
         assertEq(factory.implementation(), address(implementation));
         assertEq(factory.unlockTimestamp(), Constants.UNLOCK_TIMESTAMP);
         assertEq(factory.getAllAccounts().length, 0);
     }
-
 
     /*//////////////////////////////////////////////////////////////
                         CREATE — SELF OVERLOAD
@@ -175,9 +172,7 @@ contract BLOKCAmbassadorFactoryTest is BaseTest {
     ///         and `delegates(account)`.
     function test_createAmbassadorAccount_Other_assignsOwnershipToNamedAmbassador() public {
         vm.prank(users.goodSamaritan);
-        BLOKCAmbassadorAccount a = BLOKCAmbassadorAccount(
-            factory.createAmbassadorAccount(users.ambassador)
-        );
+        BLOKCAmbassadorAccount a = BLOKCAmbassadorAccount(factory.createAmbassadorAccount(users.ambassador));
         assertEq(a.ambassador(), users.ambassador, "ambassador is the named one");
         assertTrue(a.ambassador() != users.goodSamaritan, "caller is not owner");
         assertEq(blokc.delegates(address(a)), users.ambassador, "delegate is the ambassador");
@@ -278,5 +273,4 @@ contract BLOKCAmbassadorFactoryTest is BaseTest {
         assertEq(BLOKCAmbassadorAccount(accountX).ambassador(), users.ambassador);
         assertEq(BLOKCAmbassadorAccount(accountY).ambassador(), users.otherAmbassador);
     }
-
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseTest} from "test/utils/BaseTest.sol";
-import{BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
+import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 import {Events} from "test/utils/Events.sol";
@@ -29,7 +29,6 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 ///         the BaseTest helpers ({_createAccount}, {_fundAccount},
 ///         {_fundedAccount}, {_warpToUnlock} family) used throughout.
 contract BLOKCAmbassadorAccountTest is BaseTest {
-
     /*//////////////////////////////////////////////////////////////
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
@@ -43,8 +42,8 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///         constructor), so direct-init tests use the inherited
     ///         {implementation} instead of this helper.
     /// @return clone A labelled, uninitialized clone of {implementation}.
-    function _clone() internal returns (BLOKCAmbassadorAccount clone){
-        clone=BLOKCAmbassadorAccount(Clones.clone(address(implementation)));
+    function _clone() internal returns (BLOKCAmbassadorAccount clone) {
+        clone = BLOKCAmbassadorAccount(Clones.clone(address(implementation)));
         vm.label(address(clone), "Clone");
         return clone;
     }
@@ -57,8 +56,8 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///         any $BLOKC into the clone — use {_fundedAccount} from
     ///         {BaseTest} for that.
     /// @return clone An initialized clone bound to `users.ambassador`.
-    function _initializedClone() internal returns (BLOKCAmbassadorAccount clone){
-        clone=_clone();
+    function _initializedClone() internal returns (BLOKCAmbassadorAccount clone) {
+        clone = _clone();
         clone.initialize(users.ambassador, address(blokc), Constants.UNLOCK_TIMESTAMP);
         return clone;
     }
@@ -74,8 +73,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    All three sub-cases run against the same uninitialized
     ///         clone — since each `initialize` call reverts, the clone
     ///         stays uninitialized and can be reused for the next case.
-    function test_initialize_zeroAddress() public{
-
+    function test_initialize_zeroAddress() public {
         //simple zero address overall initialize tests
         BLOKCAmbassadorAccount clone = _clone();
         vm.expectRevert(BLOKCAmbassadorAccount.ZeroAddress.selector);
@@ -88,7 +86,6 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
         //revert if the unlock timestamp is zero
         vm.expectRevert(BLOKCAmbassadorAccount.ZeroTimestamp.selector);
         clone.initialize(users.ambassador, address(blokc), 0);
-
     }
 
     /// @notice Asserts that a second {initialize} call on an already
@@ -97,11 +94,10 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    The error lives on OpenZeppelin's {Initializable}, not on
     ///         {BLOKCAmbassadorAccount} itself — that's why the selector
     ///         is namespaced to `Initializable`.
-    function test_initialze_twiceInitializeCheck () public {
+    function test_initialze_twiceInitializeCheck() public {
         BLOKCAmbassadorAccount clone = _initializedClone();
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         clone.initialize(users.ambassador, address(blokc), Constants.UNLOCK_TIMESTAMP);
-
     }
 
     /// @notice Asserts that the **implementation** itself can never be
@@ -110,12 +106,11 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///         `_disableInitializers()`, which marks it as already
     ///         initialized; any direct {initialize} call therefore
     ///         reverts with {Initializable.InvalidInitialization}.
-    function test_initialize_revertWhen_InitializedCalledOn_Implementation () public {
-    vm.expectRevert(Initializable.InvalidInitialization.selector);
+    function test_initialize_revertWhen_InitializedCalledOn_Implementation() public {
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
 
-    implementation.initialize(users.ambassador, address(blokc), Constants.UNLOCK_TIMESTAMP);
+        implementation.initialize(users.ambassador, address(blokc), Constants.UNLOCK_TIMESTAMP);
     }
-
 
     /*//////////////////////////////////////////////////////////////
                               REDELEGATE
@@ -124,7 +119,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     //tests on redelegate
     /// @notice Asserts {reDelegate} is gated by `onlyAmbassador`.
     /// @dev    Pranks as `users.attacker` and expects {NotAnAmbassador}.
-    function test_redelegate_revertWhen_CalledByNonAmbassador () public {
+    function test_redelegate_revertWhen_CalledByNonAmbassador() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
         vm.prank(users.attacker);
         vm.expectRevert(BLOKCAmbassadorAccount.NotAnAmbassador.selector);
@@ -137,7 +132,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    Pranks as the ambassador so the auth gate passes; the
     ///         internal `_delegate` zero-address guard should then fire
     ///         with {ZeroAddress}.
-    function test_redelegate_revertWhen_DelegeteeIsZeroAddress () public {
+    function test_redelegate_revertWhen_DelegeteeIsZeroAddress() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
         vm.prank(users.ambassador);
         vm.expectRevert(BLOKCAmbassadorAccount.ZeroAddress.selector);
@@ -151,18 +146,16 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///           - `delegates(account)` points to the new delegatee,
     ///           - ambassador's vote count drops to zero,
     ///           - the delegatee receives the full balance as vote power.
-    function test_redelegate_movesVotingPower() public{
+    function test_redelegate_movesVotingPower() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         assertEq(blokc.getVotes(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
 
+        vm.prank(users.ambassador);
+        account.reDelegate(users.delegatee);
 
-          vm.prank(users.ambassador);
-          account.reDelegate(users.delegatee);
-
-          assertEq(blokc.delegates(address(account)), users.delegatee, "delegate updated");
-          assertEq(blokc.getVotes(users.ambassador), 0, "ambassador votes cleared");
-          assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "delegatee receives votes");
-
+        assertEq(blokc.delegates(address(account)), users.delegatee, "delegate updated");
+        assertEq(blokc.getVotes(users.ambassador), 0, "ambassador votes cleared");
+        assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "delegatee receives votes");
     }
 
     /// @notice Asserts {reDelegate} keeps working **after** unlock — the
@@ -170,8 +163,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    Same vote-power assertions as the happy path, but executed
     ///         after `_warpPastUnlock()`. Pins the BIP-002 rule that
     ///         delegation is unrestricted across the entire account lifetime.
-    function test_redelegate_worksAfterUnlock() public{
-
+    function test_redelegate_worksAfterUnlock() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         _warpPastUnlock();
 
@@ -182,21 +174,19 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
         assertEq(blokc.delegates(address(account)), users.delegatee, "delegate updated");
         assertEq(blokc.getVotes(users.ambassador), 0, "ambassador votes cleared");
         assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "delegatee receives votes");
-
     }
-
 
     /*//////////////////////////////////////////////////////////////
                               RECOVER_ERC20
     //////////////////////////////////////////////////////////////*/
 
-//tests on function recoverERC20
+    //tests on function recoverERC20
 
     /// @notice Asserts {recoverERC20} rejects a zero token address with
     ///         {ZeroAddress}.
     /// @dev    Auth passes (pranked as ambassador); the zero-token guard
     ///         is the first check after the modifier.
-    function test_recoverERC20_tokenAddressIsZeroAddress() public{
+    function test_recoverERC20_tokenAddressIsZeroAddress() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
 
         vm.prank(users.ambassador);
@@ -206,7 +196,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
 
     /// @notice Asserts {recoverERC20} is gated by `onlyAmbassador`.
     /// @dev    Pranks as `users.attacker` and expects {NotAnAmbassador}.
-    function test_recoverERC20_whenNotCalledByAmbassador() public{
+    function test_recoverERC20_whenNotCalledByAmbassador() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
 
         vm.prank(users.attacker);
@@ -219,13 +209,12 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    Reverts with {InvalidERC20Token} when the supplied token
     ///         equals the bound {token}. Pins the BIP-002 §11.4 rule that
     ///         only foreign ERC20s may be swept.
-    function test_recoverERC20_revert_if_whenERCTokenIs_A_BLOKC_Token() public{
+    function test_recoverERC20_revert_if_whenERCTokenIs_A_BLOKC_Token() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
         vm.prank(users.ambassador);
         vm.expectRevert(BLOKCAmbassadorAccount.InvalidERC20Token.selector);
         account.recoverERC20(address(blokc), users.ambassador, Constants.DEFAULT_FUND_AMOUNT);
     }
-
 
     /// @notice Asserts {recoverERC20} reverts with {InsufficientBalance}
     ///         when the requested amount exceeds the account's balance
@@ -234,10 +223,8 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///         into the account, **then** arms the prank — order matters,
     ///         because `new MockERC20(...)` would otherwise consume the
     ///         prank before the real call.
-    function test_recoverERC20_revert_if_amountExceedsBalance() public{
-
+    function test_recoverERC20_revert_if_amountExceedsBalance() public {
         BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
-
 
         MockERC20 token = new MockERC20("Test Token", "TEST");
 
@@ -252,11 +239,11 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
                                WITHDRAW
     //////////////////////////////////////////////////////////////*/
 
-//tests for function withdraw
+    //tests for function withdraw
 
     /// @notice Asserts {withdraw} is gated by `onlyAmbassador`.
     /// @dev    Pranks as `users.attacker` and expects {NotAnAmbassador}.
-    function test_withdraw_revert_if_calledByNonAmbassador() public{
+    function test_withdraw_revert_if_calledByNonAmbassador() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         vm.prank(users.attacker);
         _warpPastUnlock();
@@ -267,7 +254,7 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @notice Asserts {withdraw} reverts with {NoTimelineUnlockedYet}
     ///         when called well before the unlock timestamp.
     /// @dev    Time remains at `Constants.START_TIMESTAMP` (1 year pre-unlock).
-    function test_withdraw_revert_if_calledBeforeUnlock() public{
+    function test_withdraw_revert_if_calledBeforeUnlock() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         vm.prank(users.ambassador);
         vm.expectRevert(BLOKCAmbassadorAccount.NoTimelineUnlockedYet.selector);
@@ -281,27 +268,24 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     /// @dev    Uses `_warpToJustBeforeUnlock()` (= `UNLOCK_TIMESTAMP - 1`).
     ///         Pins the strict `>=` predicate inside
     ///         {onlyAfterUnlockTimestamp}.
-    function test_withdraw_revert_if_only_OneSecond_Left_BeforeUnlock() public{
-
-        BLOKCAmbassadorAccount account= _fundedAccount();
+    function test_withdraw_revert_if_only_OneSecond_Left_BeforeUnlock() public {
+        BLOKCAmbassadorAccount account = _fundedAccount();
         vm.prank(users.ambassador);
 
         _warpToJustBeforeUnlock();
         vm.expectRevert(BLOKCAmbassadorAccount.NoTimelineUnlockedYet.selector);
         account.withdraw(users.recipient, Constants.DEFAULT_FUND_AMOUNT);
-
     }
 
     /// @notice Happy-path: a full withdrawal works one day past unlock.
     /// @dev    Uses `_warpPastUnlock()` (= `UNLOCK_TIMESTAMP + 1 day`).
     ///         Asserts the recipient receives the full balance.
-    function test_withdraw_succeeds_if_only_OneDay_After_Unlock() public{
+    function test_withdraw_succeeds_if_only_OneDay_After_Unlock() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
-          _warpPastUnlock();
-          vm.prank(users.ambassador);
-          account.withdraw(users.recipient, Constants.DEFAULT_FUND_AMOUNT);
-          assertEq(blokc.balanceOf(users.recipient), Constants.DEFAULT_FUND_AMOUNT);
-
+        _warpPastUnlock();
+        vm.prank(users.ambassador);
+        account.withdraw(users.recipient, Constants.DEFAULT_FUND_AMOUNT);
+        assertEq(blokc.balanceOf(users.recipient), Constants.DEFAULT_FUND_AMOUNT);
     }
 
     //at unlock second
@@ -364,16 +348,15 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     ///         amount to the recipient and decrements the account's
     ///         balance accordingly.
     /// @dev    Side-effect assertions cover both sides of the transfer.
-    function test_withdraw_transfers() public{
+    function test_withdraw_transfers() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         _warpPastUnlock();
-        uint256 amount= 250_00e18;
+        uint256 amount = 250_00e18;
         vm.prank(users.ambassador);
         account.withdraw(users.recipient, amount);
 
         assertEq(blokc.balanceOf(users.recipient), amount, "recipient received amount");
         assertEq(blokc.balanceOf(address(account)), Constants.DEFAULT_FUND_AMOUNT - amount, "account balance decreased");
-
     }
 
     /// @notice Asserts {withdraw} accepts **any** non-zero recipient, not
@@ -388,65 +371,63 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
         assertEq(blokc.balanceOf(users.goodSamaritan), 1e18);
     }
 
-
     /*//////////////////////////////////////////////////////////////
                           WITHDRAW_TOKENS_ALL
     //////////////////////////////////////////////////////////////*/
 
-//tests for function withdrawTokensAll
+    //tests for function withdrawTokensAll
 
+    /// @notice Asserts {withdrawTokensAll} is gated by `onlyAmbassador`.
+    /// @dev    Pranks as `users.attacker` and expects {NotAnAmbassador}.
+    function test_withdrawTokensAll_revertWhen_CallerIsNotAmbassador() public {
+        BLOKCAmbassadorAccount account = _fundedAccount();
+        _warpPastUnlock();
+        vm.prank(users.attacker);
+        vm.expectRevert(BLOKCAmbassadorAccount.NotAnAmbassador.selector);
+        account.withdrawTokensAll();
+    }
 
-/// @notice Asserts {withdrawTokensAll} is gated by `onlyAmbassador`.
-/// @dev    Pranks as `users.attacker` and expects {NotAnAmbassador}.
-function test_withdrawTokensAll_revertWhen_CallerIsNotAmbassador() public {
-    BLOKCAmbassadorAccount account = _fundedAccount();
-    _warpPastUnlock();
-    vm.prank(users.attacker);
-    vm.expectRevert(BLOKCAmbassadorAccount.NotAnAmbassador.selector);
-    account.withdrawTokensAll();
-}
+    /// @notice Asserts {withdrawTokensAll} reverts with {NoTimelineUnlockedYet}
+    ///         before unlock.
+    function test_withdrawTokensAll_revertWhen_StillLocked() public {
+        BLOKCAmbassadorAccount account = _fundedAccount();
+        vm.prank(users.ambassador);
+        vm.expectRevert(BLOKCAmbassadorAccount.NoTimelineUnlockedYet.selector);
+        account.withdrawTokensAll();
+    }
 
-/// @notice Asserts {withdrawTokensAll} reverts with {NoTimelineUnlockedYet}
-///         before unlock.
-function test_withdrawTokensAll_revertWhen_StillLocked() public {
-    BLOKCAmbassadorAccount account = _fundedAccount();
-    vm.prank(users.ambassador);
-    vm.expectRevert(BLOKCAmbassadorAccount.NoTimelineUnlockedYet.selector);
-    account.withdrawTokensAll();
-}
+    /// @notice Asserts {withdrawTokensAll} reverts with {InsufficientBalance}
+    ///         when the account holds no $BLOKC.
+    /// @dev    Uses `_createAccount` (no mint) so the balance is zero.
+    function test_withdrawTokensAll_revertWhen_BalanceIsZero() public {
+        BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
+        _warpPastUnlock();
+        vm.prank(users.ambassador);
+        vm.expectRevert(BLOKCAmbassadorAccount.InsufficientBalance.selector);
+        account.withdrawTokensAll();
+    }
 
-/// @notice Asserts {withdrawTokensAll} reverts with {InsufficientBalance}
-///         when the account holds no $BLOKC.
-/// @dev    Uses `_createAccount` (no mint) so the balance is zero.
-function test_withdrawTokensAll_revertWhen_BalanceIsZero() public {
-    BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
-    _warpPastUnlock();
-    vm.prank(users.ambassador);
-    vm.expectRevert(BLOKCAmbassadorAccount.InsufficientBalance.selector);
-    account.withdrawTokensAll();
-}
+    /// @notice Boundary: asserts {withdrawTokensAll} succeeds at exactly the
+    ///         unlock second.
+    /// @dev    Asserts the full balance is delivered to the ambassador.
+    function test_withdrawTokensAll_succeedsExactlyAtUnlockSecond() public {
+        BLOKCAmbassadorAccount account = _fundedAccount();
+        _warpToUnlock();
+        vm.prank(users.ambassador);
+        account.withdrawTokensAll();
+        assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
+    }
 
-/// @notice Boundary: asserts {withdrawTokensAll} succeeds at exactly the
-///         unlock second.
-/// @dev    Asserts the full balance is delivered to the ambassador.
-function test_withdrawTokensAll_succeedsExactlyAtUnlockSecond() public {
-    BLOKCAmbassadorAccount account = _fundedAccount();
-    _warpToUnlock();
-    vm.prank(users.ambassador);
-    account.withdrawTokensAll();
-    assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
-}
+    /// @notice Happy-path: sweeps the entire $BLOKC balance to the ambassador
+    ///         and leaves the account empty.
+    /// @dev    Asserts both sides of the transfer.
+    function test_withdrawTokensAll_sweepsFullBalance() public {
+        BLOKCAmbassadorAccount account = _fundedAccount();
+        _warpPastUnlock();
+        vm.prank(users.ambassador);
+        account.withdrawTokensAll();
 
-/// @notice Happy-path: sweeps the entire $BLOKC balance to the ambassador
-///         and leaves the account empty.
-/// @dev    Asserts both sides of the transfer.
-function test_withdrawTokensAll_sweepsFullBalance() public {
-    BLOKCAmbassadorAccount account = _fundedAccount();
-    _warpPastUnlock();
-    vm.prank(users.ambassador);
-    account.withdrawTokensAll();
-
-    assertEq(blokc.balanceOf(address(account)), 0);
-    assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
+        assertEq(blokc.balanceOf(address(account)), 0);
+        assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
     }
 }

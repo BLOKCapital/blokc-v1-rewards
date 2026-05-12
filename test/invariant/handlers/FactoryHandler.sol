@@ -57,7 +57,8 @@ contract FactoryHandler is CommonBase, StdCheats, StdUtils {
     function createForPoolMember(uint256 idx, uint256 callerSeed) external {
         if (ambassadorPool.length == 0) return;
         address ambassador = ambassadorPool[idx % ambassadorPool.length];
-        address caller = (callerSeed & 1 == 0) ? ambassador : address(uint160(uint256(keccak256(abi.encode(callerSeed)))));
+        address caller =
+            (callerSeed & 1 == 0) ? ambassador : address(uint160(uint256(keccak256(abi.encode(callerSeed)))));
         if (caller == address(0)) caller = ambassador;
 
         vm.prank(caller);
