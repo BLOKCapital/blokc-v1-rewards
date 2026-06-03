@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {Test} from "forge-std/Test.sol";
 import {BLOKCAmbassadorFactory} from "../../src/contracts/factory/BLOKCAmbassadorFactory.sol";
 import {BLOKCAmbassadorAccount} from "../../src/contracts/BLOKCAmbassadorAccount.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {Events} from "test/utils/Events.sol";
-import {Users} from "test/utils/Users.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 
@@ -234,21 +229,70 @@ contract BLOKCAmbassadorFactoryTest is BaseTest {
         assertEq(factory.getAllAccounts().length, 1);
     }
 
-    // /// @dev A redundant create must NOT emit AmbassadorAccountCreated again.
-    // function test_createAmbassadorAccount_Idempotent_secondCallEmitsNothing() public {
-    //     vm.prank(users.ambassador);
-    //     factory.createAmbassadorAccount();
+    /// @notice Asserts a redundant create emits NO
+    ///         `AmbassadorAccountCreated` event — the idempotent return
+    ///         path must be log-silent.
+    /// @dev    Records logs across the second call and scans every entry
+    ///         for the event signature; none must be present.
+    function test_createAmbassadorAccount_Idempotent_secondCallEmitsNothing() public {
+        vm.prank(users.ambassador);
+        factory.createAmbassadorAccount();
 
-    //     vm.recordLogs();
-    //     vm.prank(users.ambassador);
-    //     factory.createAmbassadorAccount();
-    //     vm.Log[] memory logs = vm.getRecordedLogs();
+        vm.recordLogs();
+        vm.prank(users.ambassador);
+        factory.createAmbassadorAccount();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
 
-    //     bytes32 sig = keccak256("AmbassadorAccountCreated(address,address)");
-    //     for (uint256 i; i < logs.length; ++i) {
-    //         assertTrue(logs[i].topics[0] != sig, "no AmbassadorAccountCreated on idempotent return");
-    //     }
-    // }
+        bytes32 sig = keccak256("AmbassadorAccountCreated(address,address)");
+        for (uint256 i; i < logs.length; ++i) {
+            assertTrue(logs[i].topics[0] != sig, "no AmbassadorAccountCreated on idempotent return");
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                              VIEWS / EDGE
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Asserts the verb-named view aliases return the bound
+    ///         immutables: {getToken} and {getUnlockTimestamp}.
+    function test_view_getTokenAndUnlock_returnBoundImmutables() public view {
+        assertEq(factory.getToken(), address(blokc), "getToken matches token");
+        assertEq(factory.getToken(), factory.token(), "alias matches auto-getter");
+        assertEq(factory.getUnlockTimestamp(), Constants.UNLOCK_TIMESTAMP, "getUnlockTimestamp matches");
+        assertEq(factory.getUnlockTimestamp(), factory.unlockTimestamp(), "alias matches auto-getter");
+    }
+
+    /// @notice Asserts {predictAmbassadorAccount} equals the address the
+    ///         account is actually deployed at — for both an arbitrary
+    ///         pre-deploy ambassador and after the real deploy.
+    /// @dev    Predicting depends only on the ambassador, so the value is
+    ///         stable across the deploy transition.
+    function test_view_predict_matchesDeployedAddress() public {
+        address predictedBefore = factory.predictAmbassadorAccount(users.ambassador);
+
+        vm.prank(users.ambassador);
+        address deployed = factory.createAmbassadorAccount();
+
+        assertEq(deployed, predictedBefore, "deployed matches pre-deploy prediction");
+        assertEq(factory.predictAmbassadorAccount(users.ambassador), deployed, "prediction stable after deploy");
+    }
+
+    /// @notice Asserts an unseen ambassador reads as empty across every
+    ///         registry surface.
+    function test_view_unseenAmbassador_readsEmpty() public view {
+        assertEq(factory.accountOf(users.otherAmbassador), address(0));
+        assertEq(factory.getAccountOf(users.otherAmbassador), address(0));
+        assertFalse(factory.holdsAccount(users.otherAmbassador));
+        assertFalse(factory.hasAccount(users.otherAmbassador));
+    }
+
+    /// @notice Asserts reading `accounts(idx)` past the end of the registry
+    ///         reverts (array out-of-bounds).
+    /// @dev    No accounts created yet, so index 0 is already out of range.
+    function test_view_accounts_outOfBoundsReverts() public {
+        vm.expectRevert();
+        factory.accounts(0);
+    }
 
     /*//////////////////////////////////////////////////////////////
                           MULTI-AMBASSADOR

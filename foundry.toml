@@ -3,4 +3,22 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
+[profile.default.fuzz]
+runs = 512
+
+[profile.default.invariant]
+runs = 256
+depth = 128
+fail_on_revert = true
+
+# CI profile (referenced by .github/workflows/test.yml). Heavier fuzzing
+# and invariant exploration than the local default for stronger signal.
+[profile.ci.fuzz]
+runs = 2000
+
+[profile.ci.invariant]
+runs = 512
+depth = 256
+fail_on_revert = true
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
