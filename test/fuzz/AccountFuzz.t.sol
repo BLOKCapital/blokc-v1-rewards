@@ -101,6 +101,30 @@ contract AccountFuzzTest is BaseTest {
         }
     }
 
+    /// @notice For any funded balance and any post-unlock timestamp,
+    ///         {withdrawTokensAll} sweeps the entire balance to the
+    ///         ambassador, emits {AllTokensWithdrawn} and leaves the
+    ///         account empty.
+    function testFuzz_withdrawTokensAll_sweepsFullBalance(uint256 balance, uint64 ts) public {
+        BLOKCAmbassadorAccount account = _createAccount(users.ambassador);
+        balance = bound(balance, 1, 1_000_000_000e18);
+        _fundAccount(address(account), balance);
+
+        ts = uint64(bound(ts, Constants.AT_UNLOCK, type(uint64).max));
+        vm.warp(ts);
+
+        uint256 ambBefore = blokc.balanceOf(users.ambassador);
+
+        vm.expectEmit(true, false, false, true, address(account));
+        emit AllTokensWithdrawn(users.ambassador, balance);
+
+        vm.prank(users.ambassador);
+        account.withdrawTokensAll();
+
+        assertEq(blokc.balanceOf(users.ambassador), ambBefore + balance, "ambassador received full balance");
+        assertEq(account.balanceOf(), 0, "account fully swept");
+    }
+
     /// @notice For any valid amount and recipient, recovering a foreign
     ///         token moves exactly `amount` and never touches $BLOKC.
     function testFuzz_recoverERC20_movesExactAmount(uint256 amount, address to) public {

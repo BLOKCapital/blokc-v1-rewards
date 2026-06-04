@@ -7,6 +7,7 @@ import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
 import {BLOKCAmbassadorFactory} from "src/contracts/factory/BLOKCAmbassadorFactory.sol";
 import {MaliciousERC20} from "test/mocks/MaliciousERC20.sol";
 import {MaliciousVotesToken} from "test/mocks/MaliciousVotesToken.sol";
+import {ReentrantReDelegateToken} from "test/mocks/ReentrantReDelegateToken.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -67,6 +68,42 @@ contract ReentrancyTest is BaseTest {
             if (logs[i].topics[0] == CREATED_SIG) created++;
         }
         assertEq(created, 1, "exactly one AmbassadorAccountCreated emitted");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    reDelegate REENTRY VIA delegate()
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Proves a malicious token cannot escalate through
+    ///         `reDelegate`: `reDelegate → _delegate → token.delegate`
+    ///         gives the token a callback, but re-entering
+    ///         `account.reDelegate` from there runs with the token as
+    ///         `msg.sender`, so the `onlyAmbassador` gate reverts the entire
+    ///         call and the account's delegation is left untouched.
+    /// @dev    Uses {ReentrantReDelegateToken}; armed AFTER creation so the
+    ///         `initialize` delegate does not trigger the reentry. The outer
+    ///         `reDelegate` is sent by the ambassador (passes the gate), so
+    ///         the only {NotAnAmbassador} revert can come from the reentry.
+    function test_reDelegate_reentrantToken_blockedByOnlyAmbassador() public {
+        ReentrantReDelegateToken evilVotes = new ReentrantReDelegateToken();
+        BLOKCAmbassadorFactory evilFactory =
+            new BLOKCAmbassadorFactory(address(evilVotes), address(implementation), Constants.UNLOCK_TIMESTAMP);
+
+        vm.prank(users.ambassador);
+        BLOKCAmbassadorAccount account = BLOKCAmbassadorAccount(evilFactory.createAmbassadorAccount());
+
+        // Account starts delegated to the ambassador (set in initialize).
+        assertEq(evilVotes.delegates(address(account)), users.ambassador, "delegated to ambassador on init");
+
+        // Arm the reentry: token.delegate will re-enter account.reDelegate.
+        evilVotes.arm(account, users.delegatee);
+
+        vm.prank(users.ambassador);
+        vm.expectRevert(BLOKCAmbassadorAccount.NotAnAmbassador.selector);
+        account.reDelegate(users.delegatee);
+
+        // Whole call reverted: delegation is unchanged, attacker gained nothing.
+        assertEq(evilVotes.delegates(address(account)), users.ambassador, "delegation unchanged after blocked reentry");
     }
 
     /*//////////////////////////////////////////////////////////////

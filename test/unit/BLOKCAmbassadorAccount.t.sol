@@ -363,13 +363,20 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
 
     /// @notice Happy-path: a full withdrawal works one day past unlock.
     /// @dev    Uses `_warpPastUnlock()` (= `UNLOCK_TIMESTAMP + 1 day`).
-    ///         Asserts the recipient receives the full balance.
+    ///         Asserts the {Withdrawn} event, the recipient credit and the
+    ///         drained account balance, so a minting regression is caught.
     function test_withdraw_succeeds_if_only_OneDay_After_Unlock() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         _warpPastUnlock();
+
+        vm.expectEmit(true, false, false, true, address(account));
+        emit Withdrawn(users.recipient, Constants.DEFAULT_FUND_AMOUNT);
+
         vm.prank(users.ambassador);
         account.withdraw(users.recipient, Constants.DEFAULT_FUND_AMOUNT);
-        assertEq(blokc.balanceOf(users.recipient), Constants.DEFAULT_FUND_AMOUNT);
+
+        assertEq(blokc.balanceOf(users.recipient), Constants.DEFAULT_FUND_AMOUNT, "recipient received amount");
+        assertEq(blokc.balanceOf(address(account)), 0, "account fully drained");
     }
 
     //at unlock second
@@ -380,9 +387,15 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     function test_withdraw_succeedsExactly_AtUnlockSecond() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         _warpToUnlock();
+
+        vm.expectEmit(true, false, false, true, address(account));
+        emit Withdrawn(users.ambassador, Constants.DEFAULT_FUND_AMOUNT);
+
         vm.prank(users.ambassador);
         account.withdraw(users.ambassador, Constants.DEFAULT_FUND_AMOUNT);
-        assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT);
+
+        assertEq(blokc.balanceOf(users.ambassador), Constants.DEFAULT_FUND_AMOUNT, "recipient received amount");
+        assertEq(blokc.balanceOf(address(account)), 0, "account fully drained");
     }
 
     /// @notice Asserts {withdraw} rejects a zero recipient with
@@ -454,9 +467,15 @@ contract BLOKCAmbassadorAccountTest is BaseTest {
     function test_withdraw_canSendToAnyNonZeroRecipient() public {
         BLOKCAmbassadorAccount account = _fundedAccount();
         _warpPastUnlock();
+
+        vm.expectEmit(true, false, false, true, address(account));
+        emit Withdrawn(users.goodSamaritan, 1e18);
+
         vm.prank(users.ambassador);
         account.withdraw(users.goodSamaritan, 1e18);
-        assertEq(blokc.balanceOf(users.goodSamaritan), 1e18);
+
+        assertEq(blokc.balanceOf(users.goodSamaritan), 1e18, "recipient received amount");
+        assertEq(blokc.balanceOf(address(account)), Constants.DEFAULT_FUND_AMOUNT - 1e18, "account balance decreased");
     }
 
     /*//////////////////////////////////////////////////////////////

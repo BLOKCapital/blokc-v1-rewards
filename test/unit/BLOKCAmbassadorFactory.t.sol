@@ -55,6 +55,14 @@ contract BLOKCAmbassadorFactoryTest is BaseTest {
         new BLOKCAmbassadorFactory(address(blokc), address(0), Constants.UNLOCK_TIMESTAMP);
     }
 
+    /// @notice Asserts the constructor reverts with {ZeroTimestamp} when
+    ///         `_unlockTimestamp` is zero — a zero unlock would make every
+    ///         clone's {initialize} revert and brick the factory.
+    function test_constructor_revertWhen_UnlockTimestampIsZero() public {
+        vm.expectRevert(BLOKCAmbassadorFactory.ZeroTimestamp.selector);
+        new BLOKCAmbassadorFactory(address(blokc), address(implementation), 0);
+    }
+
     /// @notice Asserts the constructor wires up its three immutables
     ///         and starts with an empty account registry.
     /// @dev    Uses a freshly deployed factory (not the inherited one)

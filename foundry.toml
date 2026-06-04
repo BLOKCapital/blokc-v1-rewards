@@ -2,6 +2,10 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+# Pinned for reproducible bytecode + verification. Keep in sync with the
+# exact pragma in src/ (0.8.33). evm_version is left at Foundry's default
+# (prague), the correct compiler target for current mainnet.
+solc = "0.8.33"
 
 [profile.default.fuzz]
 runs = 512

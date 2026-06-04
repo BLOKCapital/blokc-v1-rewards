@@ -138,10 +138,14 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         g_callCounts["reDelegate"]++;
     }
 
-    /// @notice Bounded forward time travel. Capped so the run cannot
-    ///         skip past unlock in a single jump from the start state.
+    /// @notice Bounded forward time travel. Capped at 90 days: small
+    ///         enough that no single jump skips the 365-day pre-unlock
+    ///         window from the start state, but large enough that a run
+    ///         actually crosses into the unlocked region — otherwise
+    ///         {invariant_account_noWithdrawalBeforeUnlock} is trivially
+    ///         satisfied because unlock is never reached.
     function skipTime(uint256 secs) external {
-        secs = bound(secs, 1, 30 days);
+        secs = bound(secs, 1, 90 days);
         vm.warp(block.timestamp + secs);
         g_callCounts["skipTime"]++;
     }

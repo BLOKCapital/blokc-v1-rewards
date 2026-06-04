@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.33;
 
 /*###############################################################################
 
@@ -259,9 +259,9 @@ contract BLOKCAmbassadorAccount is Initializable {
     /// @param _to The new delegatee. Must be non-zero (enforced by
     ///            {_delegate}).
     function reDelegate(address _to) external onlyAmbassador {
-        _delegate(_to);
-
         emit Redelegated(_to);
+
+        _delegate(_to);
     }
 
     /// @notice Recovers a non-$BLOKC ERC20 token mistakenly sent to this
@@ -317,9 +317,6 @@ contract BLOKCAmbassadorAccount is Initializable {
         }
         if (amount == 0) {
             revert ZeroAmount();
-        }
-        if (IERC20(token).balanceOf(address(this)) == 0) {
-            revert InsufficientBalance();
         }
         if (amount > IERC20(token).balanceOf(address(this))) {
             revert InsufficientBalance();

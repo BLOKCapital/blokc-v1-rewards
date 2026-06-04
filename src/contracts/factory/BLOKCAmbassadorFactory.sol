@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.33;
 
 /*###############################################################################
 
@@ -120,6 +120,11 @@ contract BLOKCAmbassadorFactory {
     ///         {_createAmbassadorAccount} (ambassador).
     error ZeroAddress();
 
+    /// @notice Thrown when the constructor is given an unlock timestamp of
+    ///         zero, which would make every clone's {initialize} revert and
+    ///         permanently brick the factory.
+    error ZeroTimestamp();
+
     /*//////////////////////////////////////////////////////////////
                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -135,13 +140,17 @@ contract BLOKCAmbassadorFactory {
     ///                         {BLOKCAmbassadorAccount} implementation.
     ///                         Must be non-zero.
     /// @param _unlockTimestamp Unix timestamp (seconds) at which all
-    ///                         clones from this factory unlock.
+    ///                         clones from this factory unlock. Must be
+    ///                         non-zero.
     constructor(address _token, address _implementation, uint64 _unlockTimestamp) {
         if (_implementation == address(0)) {
             revert ZeroAddress();
         }
         if (_token == address(0)) {
             revert ZeroAddress();
+        }
+        if (_unlockTimestamp == 0) {
+            revert ZeroTimestamp();
         }
 
         token = _token;
