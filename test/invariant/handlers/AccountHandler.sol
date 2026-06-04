@@ -91,7 +91,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         uint256 bal = blokc.balanceOf(address(account));
         if (bal == 0) return;
         amount = bound(amount, 1, bal);
-        if (to == address(0)) to = ambassador;
+        // Redirect zero and self-recipient: a withdrawal to the account
+        // itself is a valid no-op that leaves the balance unchanged, which
+        // would break the conservation ghost (`g_totalWithdrawn` counts it
+        // as sent out though nothing left). Send to the ambassador instead.
+        if (to == address(0) || to == address(account)) to = ambassador;
         if (block.timestamp < account.unlockTimestamp()) return;
 
         vm.prank(ambassador);
