@@ -4,15 +4,15 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
-import {BLOKCAmbassadorFactory} from "src/contracts/factory/BLOKCAmbassadorFactory.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
+import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 import {AccountHandler} from "test/invariant/handlers/AccountHandler.sol";
 import {Constants} from "test/utils/Constants.sol";
 
 /// @title  AccountInvariant
-/// @notice Invariant suite for {BLOKCAmbassadorAccount}, driven by the
+/// @notice Invariant suite for {BLOKCContributorAccount}, driven by the
 ///         pre-existing {AccountHandler}. The handler bounds funding,
 ///         withdrawals, recovery, delegation and time travel so the fuzzer
 ///         spends its budget on meaningful state rather than reverts.
@@ -20,38 +20,38 @@ import {Constants} from "test/utils/Constants.sol";
 /// @dev    Core properties asserted after every handler call:
 ///           - Conservation: held $BLOKC == total funded − total withdrawn.
 ///           - The lock holds: no $BLOKC ever leaves before `unlockTimestamp`.
-///           - Configuration is immutable: token / ambassador / unlock never
+///           - Configuration is immutable: token / contributor / unlock never
 ///             change after initialization.
 contract AccountInvariant is StdInvariant, Test {
     MockBLOKC internal blokc;
-    BLOKCAmbassadorAccount internal implementation;
-    BLOKCAmbassadorFactory internal factory;
-    BLOKCAmbassadorAccount internal account;
+    BLOKCContributorAccount internal implementation;
+    BLOKCContributorFactory internal factory;
+    BLOKCContributorAccount internal account;
     MockERC20 internal foreignToken;
     AccountHandler internal handler;
 
-    address internal ambassador;
+    address internal contributor;
 
     function setUp() public {
         // Start a year before unlock so time-travel only moves forward.
         vm.warp(Constants.START_TIMESTAMP);
 
-        ambassador = makeAddr("ambassador");
+        contributor = makeAddr("contributor");
 
         blokc = new MockBLOKC();
-        implementation = new BLOKCAmbassadorAccount();
-        factory = new BLOKCAmbassadorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
+        implementation = new BLOKCContributorAccount();
+        factory = new BLOKCContributorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
         foreignToken = new MockERC20("Foreign", "FRGN");
 
-        vm.prank(ambassador);
-        account = BLOKCAmbassadorAccount(factory.createAmbassadorAccount());
+        vm.prank(contributor);
+        account = BLOKCContributorAccount(factory.createContributorAccount());
 
         address[] memory delegatees = new address[](3);
         delegatees[0] = makeAddr("delegatee0");
         delegatees[1] = makeAddr("delegatee1");
-        delegatees[2] = ambassador;
+        delegatees[2] = contributor;
 
-        handler = new AccountHandler(account, blokc, foreignToken, ambassador, delegatees);
+        handler = new AccountHandler(account, blokc, foreignToken, contributor, delegatees);
 
         // Only the handler is fuzzed, and only its action selectors.
         bytes4[] memory selectors = new bytes4[](7);
@@ -85,11 +85,11 @@ contract AccountInvariant is StdInvariant, Test {
         }
     }
 
-    /// @notice Token, ambassador and unlock timestamp are write-once and
+    /// @notice Token, contributor and unlock timestamp are write-once and
     ///         never drift across the account's lifetime.
     function invariant_account_immutableConfig() public view {
         assertEq(account.token(), address(blokc), "token drifted");
-        assertEq(account.ambassador(), ambassador, "ambassador drifted");
+        assertEq(account.contributor(), contributor, "contributor drifted");
         assertEq(account.unlockTimestamp(), Constants.UNLOCK_TIMESTAMP, "unlock drifted");
     }
 }

@@ -7,17 +7,17 @@ pragma solidity ^0.8.24;
 struct Users {
     /// @notice Deploys the implementation, factory and mock token.
     address payable deployer;
-    /// @notice Primary ambassador used in single-account flows.
-    address payable ambassador;
-    /// @notice Secondary ambassador used in multi-account / idempotency tests.
-    address payable otherAmbassador;
-    /// @notice Unauthorized caller used to assert `onlyAmbassador` reverts.
+    /// @notice Primary contributor used in single-account flows.
+    address payable contributor;
+    /// @notice Secondary contributor used in multi-account / idempotency tests.
+    address payable otherContributor;
+    /// @notice Unauthorized caller used to assert `onlyContributor` reverts.
     address payable attacker;
-    /// @notice Withdrawal recipient distinct from the ambassador.
+    /// @notice Withdrawal recipient distinct from the contributor.
     address payable recipient;
     /// @notice Delegatee target used in `reDelegate` tests.
     address payable delegatee;
     /// @notice Permissionless caller used in factory tests where someone
-    ///         other than the ambassador deploys the account.
+    ///         other than the contributor deploys the account.
     address payable goodSamaritan;
 }

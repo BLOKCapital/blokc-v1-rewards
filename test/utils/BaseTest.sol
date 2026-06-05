@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
-import {BLOKCAmbassadorFactory} from "src/contracts/factory/BLOKCAmbassadorFactory.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
+import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 
@@ -17,7 +17,7 @@ import {Users} from "test/utils/Users.sol";
 ///         materialises the named user set, mints test funds and warps
 ///         to a stable pre-unlock baseline.
 ///
-/// @dev    `setUp` does NOT create any ambassador accounts. Tests that
+/// @dev    `setUp` does NOT create any contributor accounts. Tests that
 ///         need an account call `_createAccount(user)` themselves so
 ///         that creation, funding and the unlock-time boundary stay
 ///         under each test's control.
@@ -33,11 +33,11 @@ abstract contract BaseTest is Test, Events {
     MockBLOKC internal blokc;
 
     /// @notice Singleton implementation that every clone delegatecalls into.
-    BLOKCAmbassadorAccount internal implementation;
+    BLOKCContributorAccount internal implementation;
 
     /// @notice Production-shaped factory bound to `blokc`, `implementation`
     ///         and `Constants.UNLOCK_TIMESTAMP`.
-    BLOKCAmbassadorFactory internal factory;
+    BLOKCContributorFactory internal factory;
 
     /*//////////////////////////////////////////////////////////////
                                 SETUP
@@ -50,8 +50,8 @@ abstract contract BaseTest is Test, Events {
         // 2. Build the labelled user set.
         users = Users({
             deployer: _user("deployer"),
-            ambassador: _user("ambassador"),
-            otherAmbassador: _user("otherAmbassador"),
+            contributor: _user("contributor"),
+            otherContributor: _user("otherContributor"),
             attacker: _user("attacker"),
             recipient: _user("recipient"),
             delegatee: _user("delegatee"),
@@ -64,10 +64,10 @@ abstract contract BaseTest is Test, Events {
         blokc = new MockBLOKC();
         vm.label(address(blokc), "MockBLOKC");
 
-        implementation = new BLOKCAmbassadorAccount();
+        implementation = new BLOKCContributorAccount();
         vm.label(address(implementation), "AccountImpl");
 
-        factory = new BLOKCAmbassadorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
+        factory = new BLOKCContributorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
         vm.label(address(factory), "Factory");
 
         vm.stopPrank();
@@ -83,11 +83,11 @@ abstract contract BaseTest is Test, Events {
         vm.deal(u, 100 ether);
     }
 
-    /// @notice Deploy `ambassador`'s account via the factory using the
-    ///         caller-overload (i.e. ambassador deploys it themselves).
-    function _createAccount(address ambassador) internal returns (BLOKCAmbassadorAccount account) {
-        vm.prank(ambassador);
-        account = BLOKCAmbassadorAccount(factory.createAmbassadorAccount());
+    /// @notice Deploy `contributor`'s account via the factory using the
+    ///         caller-overload (i.e. contributor deploys it themselves).
+    function _createAccount(address contributor) internal returns (BLOKCContributorAccount account) {
+        vm.prank(contributor);
+        account = BLOKCContributorAccount(factory.createContributorAccount());
     }
 
     /// @notice Mint $BLOKC directly into an account address.
@@ -100,11 +100,11 @@ abstract contract BaseTest is Test, Events {
         blokc.mint(account, amount);
     }
 
-    /// @notice Deploy `users.ambassador`'s account and mint the default
+    /// @notice Deploy `users.contributor`'s account and mint the default
     ///         $BLOKC fund into it. Convenience wrapper used by tests that
     ///         need a single funded account in one line.
-    function _fundedAccount() internal returns (BLOKCAmbassadorAccount a) {
-        a = _createAccount(users.ambassador);
+    function _fundedAccount() internal returns (BLOKCContributorAccount a) {
+        a = _createAccount(users.contributor);
         _fundAccount(address(a));
     }
 

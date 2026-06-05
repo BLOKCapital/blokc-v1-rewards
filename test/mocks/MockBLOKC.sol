@@ -7,13 +7,13 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /// @notice ERC20Votes-compatible mock of $BLOKC for the test suite.
 /// @dev    The production account contract calls
-///         `IVotes(token).delegate(ambassador)` inside `initialize`, so a
+///         `IVotes(token).delegate(contributor)` inside `initialize`, so a
 ///         plain ERC20 mock would revert with no-such-function. This mock
 ///         inherits the OZ `ERC20Votes` extension which already wires
 ///         `_update` to keep checkpoints — no override needed.
 ///
 ///         `mint` is permissionless on purpose; tests mint freely into
-///         arbitrary addresses (including ambassador account addresses,
+///         arbitrary addresses (including contributor account addresses,
 ///         to simulate funding from the DAO treasury).
 contract MockBLOKC is ERC20, ERC20Votes {
     constructor() ERC20("Mock BLOKC", "MBLOKC") EIP712("Mock BLOKC", "1") {}

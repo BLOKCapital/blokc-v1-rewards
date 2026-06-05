@@ -21,7 +21,7 @@ library Constants {
     ///         tests can warp forward without underflow.
     uint64 internal constant START_TIMESTAMP = UNLOCK_TIMESTAMP - 365 days;
 
-    /// @notice Default $BLOKC balance funded into an ambassador account
+    /// @notice Default $BLOKC balance funded into a contributor account
     ///         by `BaseTest._fundAccount` when no amount is specified.
     uint256 internal constant DEFAULT_FUND_AMOUNT = 1_000_000e18;
 }

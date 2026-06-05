@@ -5,19 +5,19 @@ import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 
-/// @notice Bounded handler that drives a single `BLOKCAmbassadorAccount`
+/// @notice Bounded handler that drives a single `BLOKCContributorAccount`
 ///         through random combinations of its public actions, for use by
 ///         `AccountInvariant.t.sol`. Without a handler, the invariant
 ///         fuzzer wastes most runs on reverts (wrong sender, zero
 ///         amounts, etc).
 ///
-/// @dev    The handler always pranks as the bound `ambassador`, so
-///         `onlyAmbassador` never trips. Time travel and funding are
+/// @dev    The handler always pranks as the bound `contributor`, so
+///         `onlyContributor` never trips. Time travel and funding are
 ///         exposed as bounded actions so invariant runs can cover
 ///         lifecycle states without the engine spending its budget on
 ///         arithmetic that would otherwise revert.
@@ -33,11 +33,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
-    BLOKCAmbassadorAccount public account;
+    BLOKCContributorAccount public account;
     MockBLOKC public blokc;
     MockERC20 public foreignToken;
 
-    address public ambassador;
+    address public contributor;
     address[] public delegatees;
 
     // ghost vars
@@ -50,16 +50,16 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
     //////////////////////////////////////////////////////////////*/
 
     constructor(
-        BLOKCAmbassadorAccount _account,
+        BLOKCContributorAccount _account,
         MockBLOKC _blokc,
         MockERC20 _foreignToken,
-        address _ambassador,
+        address _contributor,
         address[] memory _delegatees
     ) {
         account = _account;
         blokc = _blokc;
         foreignToken = _foreignToken;
-        ambassador = _ambassador;
+        contributor = _contributor;
         delegatees = _delegatees;
     }
 
@@ -94,11 +94,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         // Redirect zero and self-recipient: a withdrawal to the account
         // itself is a valid no-op that leaves the balance unchanged, which
         // would break the conservation ghost (`g_totalWithdrawn` counts it
-        // as sent out though nothing left). Send to the ambassador instead.
-        if (to == address(0) || to == address(account)) to = ambassador;
+        // as sent out though nothing left). Send to the contributor instead.
+        if (to == address(0) || to == address(account)) to = contributor;
         if (block.timestamp < account.unlockTimestamp()) return;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.withdraw(to, amount);
 
         g_totalWithdrawn += amount;
@@ -111,7 +111,7 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         if (bal == 0) return;
         if (block.timestamp < account.unlockTimestamp()) return;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.withdrawTokensAll();
 
         g_totalWithdrawn += bal;
@@ -123,9 +123,9 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         uint256 bal = foreignToken.balanceOf(address(account));
         if (bal == 0) return;
         amount = bound(amount, 1, bal);
-        if (to == address(0)) to = ambassador;
+        if (to == address(0)) to = contributor;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.recoverERC20(address(foreignToken), to, amount);
 
         g_callCounts["recoverForeign"]++;
@@ -136,7 +136,7 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         if (delegatees.length == 0) return;
         address to = delegatees[idx % delegatees.length];
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.reDelegate(to);
 
         g_callCounts["reDelegate"]++;

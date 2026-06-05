@@ -5,29 +5,29 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 
 /// @notice ERC20Votes-shaped token whose `delegate` callback re-enters
-///         `BLOKCAmbassadorAccount.reDelegate` on a configured account.
+///         `BLOKCContributorAccount.reDelegate` on a configured account.
 ///
 /// @dev    Companion to {MaliciousVotesToken} (which re-enters the
 ///         *factory*). This one targets the *account*'s `reDelegate`:
 ///         `reDelegate` calls `_delegate → IVotes(token).delegate`, so a
 ///         malicious token can attempt to re-enter `reDelegate` from that
-///         callback. The test proves the `onlyAmbassador` gate blocks it —
-///         the reentry's `msg.sender` is this token, not the ambassador, so
+///         callback. The test proves the `onlyContributor` gate blocks it —
+///         the reentry's `msg.sender` is this token, not the contributor, so
 ///         the whole call reverts and delegation is left untouched.
 ///
 ///         Arm AFTER the account is created: `initialize` already fires a
 ///         `delegate`, and arming first would trigger reentry during setup.
 contract ReentrantReDelegateToken is ERC20, ERC20Votes {
-    BLOKCAmbassadorAccount public targetAccount;
+    BLOKCContributorAccount public targetAccount;
     address public reentryDelegatee;
     bool public reentryArmed;
 
     constructor() ERC20("ReVotes", "RVOTES") EIP712("ReVotes", "1") {}
 
-    function arm(BLOKCAmbassadorAccount _account, address _delegatee) external {
+    function arm(BLOKCContributorAccount _account, address _delegatee) external {
         targetAccount = _account;
         reentryDelegatee = _delegatee;
         reentryArmed = true;
@@ -38,7 +38,7 @@ contract ReentrantReDelegateToken is ERC20, ERC20Votes {
     }
 
     /// @dev Override `delegate` (not `_delegate`) to intercept the external
-    ///      entry point that {BLOKCAmbassadorAccount} calls.
+    ///      entry point that {BLOKCContributorAccount} calls.
     function delegate(address delegatee) public override {
         super.delegate(delegatee);
 

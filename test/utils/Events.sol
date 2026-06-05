@@ -3,22 +3,22 @@ pragma solidity ^0.8.24;
 
 /// @notice Re-declared events from the production contracts so tests can
 ///         use `vm.expectEmit` without importing source. Signatures must
-///         match `BLOKCAmbassadorAccount` and `BLOKCAmbassadorFactory`
+///         match `BLOKCContributorAccount` and `BLOKCContributorFactory`
 ///         exactly — including `indexed` placement.
 abstract contract Events {
     /*//////////////////////////////////////////////////////////////
-                         BLOKCAmbassadorAccount
+                         BLOKCContributorAccount
     //////////////////////////////////////////////////////////////*/
 
-    event Initialized(address indexed ambassador, address indexed token, uint64 unlockTimestamp);
+    event Initialized(address indexed contributor, address indexed token, uint64 unlockTimestamp);
     event Redelegated(address indexed to);
     event Withdrawn(address indexed to, uint256 amount);
-    event AllTokensWithdrawn(address indexed ambassador, uint256 balance);
+    event AllTokensWithdrawn(address indexed contributor, uint256 balance);
     event NonBLOKCTokensRecovered(address indexed token, address indexed to, uint256 amount);
 
     /*//////////////////////////////////////////////////////////////
-                         BLOKCAmbassadorFactory
+                         BLOKCContributorFactory
     //////////////////////////////////////////////////////////////*/
 
-    event AmbassadorAccountCreated(address indexed ambassador, address indexed account);
+    event ContributorAccountCreated(address indexed contributor, address indexed account);
 }
