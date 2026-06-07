@@ -5,19 +5,19 @@ import {CommonBase} from "forge-std/Base.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {StdUtils} from "forge-std/StdUtils.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 import {MockERC20} from "test/mocks/MockERC20.sol";
 
-/// @notice Bounded handler that drives a single `BLOKCAmbassadorAccount`
+/// @notice Bounded handler that drives a single `BLOKCContributorAccount`
 ///         through random combinations of its public actions, for use by
 ///         `AccountInvariant.t.sol`. Without a handler, the invariant
 ///         fuzzer wastes most runs on reverts (wrong sender, zero
 ///         amounts, etc).
 ///
-/// @dev    The handler always pranks as the bound `ambassador`, so
-///         `onlyAmbassador` never trips. Time travel and funding are
+/// @dev    The handler always pranks as the bound `contributor`, so
+///         `onlyContributor` never trips. Time travel and funding are
 ///         exposed as bounded actions so invariant runs can cover
 ///         lifecycle states without the engine spending its budget on
 ///         arithmetic that would otherwise revert.
@@ -33,12 +33,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
                                  STATE
     //////////////////////////////////////////////////////////////*/
 
-    BLOKCAmbassadorAccount public account;
+    BLOKCContributorAccount public account;
     MockBLOKC public blokc;
     MockERC20 public foreignToken;
 
-    address public ambassador;
-    address[] public delegatees;
+    address public contributor;
 
     // ghost vars
     uint256 public g_totalFunded;
@@ -49,18 +48,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-        BLOKCAmbassadorAccount _account,
-        MockBLOKC _blokc,
-        MockERC20 _foreignToken,
-        address _ambassador,
-        address[] memory _delegatees
-    ) {
+    constructor(BLOKCContributorAccount _account, MockBLOKC _blokc, MockERC20 _foreignToken, address _contributor) {
         account = _account;
         blokc = _blokc;
         foreignToken = _foreignToken;
-        ambassador = _ambassador;
-        delegatees = _delegatees;
+        contributor = _contributor;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -91,10 +83,14 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         uint256 bal = blokc.balanceOf(address(account));
         if (bal == 0) return;
         amount = bound(amount, 1, bal);
-        if (to == address(0)) to = ambassador;
+        // Redirect zero and self-recipient: a withdrawal to the account
+        // itself is a valid no-op that leaves the balance unchanged, which
+        // would break the conservation ghost (`g_totalWithdrawn` counts it
+        // as sent out though nothing left). Send to the contributor instead.
+        if (to == address(0) || to == address(account)) to = contributor;
         if (block.timestamp < account.unlockTimestamp()) return;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.withdraw(to, amount);
 
         g_totalWithdrawn += amount;
@@ -107,7 +103,7 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         if (bal == 0) return;
         if (block.timestamp < account.unlockTimestamp()) return;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.withdrawTokensAll();
 
         g_totalWithdrawn += bal;
@@ -119,29 +115,22 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         uint256 bal = foreignToken.balanceOf(address(account));
         if (bal == 0) return;
         amount = bound(amount, 1, bal);
-        if (to == address(0)) to = ambassador;
+        if (to == address(0)) to = contributor;
 
-        vm.prank(ambassador);
+        vm.prank(contributor);
         account.recoverERC20(address(foreignToken), to, amount);
 
         g_callCounts["recoverForeign"]++;
     }
 
-    /// @notice Re-delegate to one of the pre-selected delegatees.
-    function reDelegate(uint256 idx) external {
-        if (delegatees.length == 0) return;
-        address to = delegatees[idx % delegatees.length];
-
-        vm.prank(ambassador);
-        account.reDelegate(to);
-
-        g_callCounts["reDelegate"]++;
-    }
-
-    /// @notice Bounded forward time travel. Capped so the run cannot
-    ///         skip past unlock in a single jump from the start state.
+    /// @notice Bounded forward time travel. Capped at 90 days: small
+    ///         enough that no single jump skips the 365-day pre-unlock
+    ///         window from the start state, but large enough that a run
+    ///         actually crosses into the unlocked region — otherwise
+    ///         {invariant_account_noWithdrawalBeforeUnlock} is trivially
+    ///         satisfied because unlock is never reached.
     function skipTime(uint256 secs) external {
-        secs = bound(secs, 1, 30 days);
+        secs = bound(secs, 1, 90 days);
         vm.warp(block.timestamp + secs);
         g_callCounts["skipTime"]++;
     }

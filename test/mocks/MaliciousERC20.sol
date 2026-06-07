@@ -3,10 +3,10 @@ pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-import {BLOKCAmbassadorAccount} from "src/contracts/BLOKCAmbassadorAccount.sol";
+import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 
 /// @notice Mis-behaving ERC20 used to exercise the `recoverERC20` path
-///         in `BLOKCAmbassadorAccount`. Toggle one of the failure modes
+///         in `BLOKCContributorAccount`. Toggle one of the failure modes
 ///         before calling the function under test.
 ///
 /// @dev    Modes covered:
@@ -33,7 +33,7 @@ contract MaliciousERC20 is ERC20 {
 
     /// @notice Account targeted for reentry. Set before triggering a
     ///         `ReenterRecover` mode call.
-    BLOKCAmbassadorAccount public target;
+    BLOKCContributorAccount public target;
 
     /// @notice Recipient passed by the malicious reentry call.
     address public reentryRecipient;
@@ -47,7 +47,7 @@ contract MaliciousERC20 is ERC20 {
         mode = _mode;
     }
 
-    function setReentryTarget(BLOKCAmbassadorAccount _target, address _recipient, uint256 _amount) external {
+    function setReentryTarget(BLOKCContributorAccount _target, address _recipient, uint256 _amount) external {
         target = _target;
         reentryRecipient = _recipient;
         reentryAmount = _amount;
