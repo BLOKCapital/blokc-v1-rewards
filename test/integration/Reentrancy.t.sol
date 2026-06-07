@@ -7,7 +7,6 @@ import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {MaliciousERC20} from "test/mocks/MaliciousERC20.sol";
 import {MaliciousVotesToken} from "test/mocks/MaliciousVotesToken.sol";
-import {ReentrantReDelegateToken} from "test/mocks/ReentrantReDelegateToken.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -68,42 +67,6 @@ contract ReentrancyTest is BaseTest {
             if (logs[i].topics[0] == CREATED_SIG) created++;
         }
         assertEq(created, 1, "exactly one ContributorAccountCreated emitted");
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                    reDelegate REENTRY VIA delegate()
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Proves a malicious token cannot escalate through
-    ///         `reDelegate`: `reDelegate → _delegate → token.delegate`
-    ///         gives the token a callback, but re-entering
-    ///         `account.reDelegate` from there runs with the token as
-    ///         `msg.sender`, so the `onlyContributor` gate reverts the entire
-    ///         call and the account's delegation is left untouched.
-    /// @dev    Uses {ReentrantReDelegateToken}; armed AFTER creation so the
-    ///         `initialize` delegate does not trigger the reentry. The outer
-    ///         `reDelegate` is sent by the contributor (passes the gate), so
-    ///         the only {NotAContributor} revert can come from the reentry.
-    function test_reDelegate_reentrantToken_blockedByOnlyContributor() public {
-        ReentrantReDelegateToken evilVotes = new ReentrantReDelegateToken();
-        BLOKCContributorFactory evilFactory =
-            new BLOKCContributorFactory(address(evilVotes), address(implementation), Constants.UNLOCK_TIMESTAMP);
-
-        vm.prank(users.contributor);
-        BLOKCContributorAccount account = BLOKCContributorAccount(evilFactory.createContributorAccount());
-
-        // Account starts delegated to the contributor (set in initialize).
-        assertEq(evilVotes.delegates(address(account)), users.contributor, "delegated to contributor on init");
-
-        // Arm the reentry: token.delegate will re-enter account.reDelegate.
-        evilVotes.arm(account, users.delegatee);
-
-        vm.prank(users.contributor);
-        vm.expectRevert(BLOKCContributorAccount.NotAContributor.selector);
-        account.reDelegate(users.delegatee);
-
-        // Whole call reverted: delegation is unchanged, attacker gained nothing.
-        assertEq(evilVotes.delegates(address(account)), users.contributor, "delegation unchanged after blocked reentry");
     }
 
     /*//////////////////////////////////////////////////////////////

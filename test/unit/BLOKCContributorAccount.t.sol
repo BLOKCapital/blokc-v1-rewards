@@ -17,7 +17,6 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 ///
 ///         Tests exercise the contract's external surface:
 ///           - {initialize}            : argument validation, double-init guard, impl-init guard.
-///           - {reDelegate}            : auth gate, zero-delegatee guard, vote-power movement, pre/post unlock.
 ///           - {recoverERC20}          : auth gate, $BLOKC blocklist, arg validation, insufficient balance.
 ///           - {withdraw}              : auth gate, time gate (with boundary), arg validation, balance checks.
 ///           - {withdrawTokensAll}     : auth gate, time gate (with boundary), empty-balance revert, full sweep.
@@ -128,71 +127,6 @@ contract BLOKCContributorAccountTest is BaseTest {
         assertEq(clone.token(), address(blokc), "token stored");
         assertEq(clone.unlockTimestamp(), Constants.UNLOCK_TIMESTAMP, "unlock stored");
         assertEq(blokc.delegates(address(clone)), users.contributor, "voting power delegated to contributor");
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                              REDELEGATE
-    //////////////////////////////////////////////////////////////*/
-
-    //tests on redelegate
-    /// @notice Asserts {reDelegate} is gated by `onlyContributor`.
-    /// @dev    Pranks as `users.attacker` and expects {NotAContributor}.
-    function test_redelegate_revertWhen_CalledByNonContributor() public {
-        BLOKCContributorAccount account = _createAccount(users.contributor);
-        vm.prank(users.attacker);
-        vm.expectRevert(BLOKCContributorAccount.NotAContributor.selector);
-        account.reDelegate(users.delegatee);
-    }
-
-    /// @notice Asserts {reDelegate} rejects a zero-address delegatee.
-    /// @dev    Pranks as the contributor so the auth gate passes; the
-    ///         internal `_delegate` zero-address guard should then fire
-    ///         with {ZeroAddress}.
-    function test_redelegate_revertWhen_DelegeteeIsZeroAddress() public {
-        BLOKCContributorAccount account = _createAccount(users.contributor);
-        vm.prank(users.contributor);
-        vm.expectRevert(BLOKCContributorAccount.ZeroAddress.selector);
-        account.reDelegate(address(0));
-    }
-
-    /// @notice Happy-path: re-delegating moves the account's voting
-    ///         power from the contributor to the new delegatee.
-    /// @dev    Pre-condition: account is funded, so `getVotes(contributor)`
-    ///         is non-zero on entry. After {reDelegate}:
-    ///           - `delegates(account)` points to the new delegatee,
-    ///           - contributor's vote count drops to zero,
-    ///           - the delegatee receives the full balance as vote power.
-    function test_redelegate_movesVotingPower() public {
-        BLOKCContributorAccount account = _fundedAccount();
-        assertEq(blokc.getVotes(users.contributor), Constants.DEFAULT_FUND_AMOUNT);
-
-        vm.expectEmit(true, false, false, true, address(account));
-        emit Redelegated(users.delegatee);
-
-        vm.prank(users.contributor);
-        account.reDelegate(users.delegatee);
-
-        assertEq(blokc.delegates(address(account)), users.delegatee, "delegate updated");
-        assertEq(blokc.getVotes(users.contributor), 0, "contributor votes cleared");
-        assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "delegatee receives votes");
-    }
-
-    /// @notice Asserts {reDelegate} keeps working **after** unlock — the
-    ///         lock applies to fund movement, not to governance routing.
-    /// @dev    Same vote-power assertions as the happy path, but executed
-    ///         after `_warpPastUnlock()`. Pins the BIP-002 rule that
-    ///         delegation is unrestricted across the entire account lifetime.
-    function test_redelegate_worksAfterUnlock() public {
-        BLOKCContributorAccount account = _fundedAccount();
-        _warpPastUnlock();
-
-        vm.prank(users.contributor);
-
-        account.reDelegate(users.delegatee);
-
-        assertEq(blokc.delegates(address(account)), users.delegatee, "delegate updated");
-        assertEq(blokc.getVotes(users.contributor), 0, "contributor votes cleared");
-        assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "delegatee receives votes");
     }
 
     /*//////////////////////////////////////////////////////////////

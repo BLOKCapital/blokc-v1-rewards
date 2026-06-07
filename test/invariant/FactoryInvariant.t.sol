@@ -37,10 +37,10 @@ contract FactoryInvariant is StdInvariant, Test {
         factory = new BLOKCContributorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
 
         address[] memory pool = new address[](4);
-        pool[0] = makeAddr("amb0");
-        pool[1] = makeAddr("amb1");
-        pool[2] = makeAddr("amb2");
-        pool[3] = makeAddr("amb3");
+        pool[0] = makeAddr("contrib0");
+        pool[1] = makeAddr("contrib1");
+        pool[2] = makeAddr("contrib2");
+        pool[3] = makeAddr("contrib3");
 
         handler = new FactoryHandler(factory, pool);
 
@@ -64,12 +64,12 @@ contract FactoryInvariant is StdInvariant, Test {
     function invariant_factory_accountStableAndPredicted() public view {
         uint256 n = handler.seenContributorsLength();
         for (uint256 i; i < n; ++i) {
-            address amb = handler.g_seenContributors(i);
-            address acct = factory.accountOf(amb);
+            address contrib = handler.g_seenContributors(i);
+            address acct = factory.accountOf(contrib);
             assertTrue(acct != address(0), "seen contributor has no account");
-            assertEq(acct, handler.g_lastReturned(amb), "account address drifted from handler record");
-            assertEq(acct, factory.predictContributorAccount(amb), "account != deterministic prediction");
-            assertTrue(factory.holdsAccount(amb), "holdsAccount false for seen contributor");
+            assertEq(acct, handler.g_lastReturned(contrib), "account address drifted from handler record");
+            assertEq(acct, factory.predictContributorAccount(contrib), "account != deterministic prediction");
+            assertTrue(factory.holdsAccount(contrib), "holdsAccount false for seen contributor");
         }
     }
 

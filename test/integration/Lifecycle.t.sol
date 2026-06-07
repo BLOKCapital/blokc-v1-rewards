@@ -18,7 +18,7 @@ import {Constants} from "test/utils/Constants.sol";
 contract LifecycleTest is BaseTest {
     /// @notice Full happy lifecycle:
     ///         predict → pre-fund the predicted address → third-party deploy
-    ///         → account captures the pre-funded balance → re-delegate
+    ///         → account captures the pre-funded balance (voting power delegated)
     ///         → warp to unlock → withdraw to an external recipient.
     /// @dev    Pre-funding happens BEFORE any contract exists at the
     ///         address, proving the clone inherits the balance sitting at
@@ -45,18 +45,13 @@ contract LifecycleTest is BaseTest {
         assertEq(blokc.delegates(address(account)), users.contributor, "voting power delegated to contributor");
         assertEq(blokc.getVotes(users.contributor), Constants.DEFAULT_FUND_AMOUNT, "locked tokens count as votes");
 
-        // 5. Contributor re-routes governance power while still locked.
-        vm.prank(users.contributor);
-        account.reDelegate(users.delegatee);
-        assertEq(blokc.getVotes(users.delegatee), Constants.DEFAULT_FUND_AMOUNT, "votes moved to delegatee");
-
-        // 6. Locked: withdrawal must fail right up to the boundary.
+        // 5. Locked: withdrawal must fail right up to the boundary.
         _warpToJustBeforeUnlock();
         vm.prank(users.contributor);
         vm.expectRevert(BLOKCContributorAccount.NoTimelineUnlockedYet.selector);
         account.withdraw(users.recipient, 1);
 
-        // 7. At unlock, the contributor withdraws the full balance externally.
+        // 6. At unlock, the contributor withdraws the full balance externally.
         _warpToUnlock();
         vm.prank(users.contributor);
         account.withdraw(users.recipient, Constants.DEFAULT_FUND_AMOUNT);

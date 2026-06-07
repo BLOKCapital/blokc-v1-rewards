@@ -22,9 +22,9 @@ import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFac
 ///
 ///         This mock lets a test prove that claim:
 ///           1. Factory deployed with this token as `_token`.
-///           2. Factory.createContributorAccount(amb) is called.
-///           3. During initialize → delegate(amb), this token re-enters
-///              factory.createContributorAccount(amb).
+///           2. Factory.createContributorAccount(contributor) is called.
+///           3. During initialize -> delegate(contributor), this token re-enters
+///              factory.createContributorAccount(contributor).
 ///           4. Test asserts: same address returned, `accounts.length == 1`,
 ///              exactly one `ContributorAccountCreated` event.
 ///

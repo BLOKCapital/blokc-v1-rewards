@@ -38,7 +38,6 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
     MockERC20 public foreignToken;
 
     address public contributor;
-    address[] public delegatees;
 
     // ghost vars
     uint256 public g_totalFunded;
@@ -49,18 +48,11 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-        BLOKCContributorAccount _account,
-        MockBLOKC _blokc,
-        MockERC20 _foreignToken,
-        address _contributor,
-        address[] memory _delegatees
-    ) {
+    constructor(BLOKCContributorAccount _account, MockBLOKC _blokc, MockERC20 _foreignToken, address _contributor) {
         account = _account;
         blokc = _blokc;
         foreignToken = _foreignToken;
         contributor = _contributor;
-        delegatees = _delegatees;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -129,17 +121,6 @@ contract AccountHandler is CommonBase, StdCheats, StdUtils {
         account.recoverERC20(address(foreignToken), to, amount);
 
         g_callCounts["recoverForeign"]++;
-    }
-
-    /// @notice Re-delegate to one of the pre-selected delegatees.
-    function reDelegate(uint256 idx) external {
-        if (delegatees.length == 0) return;
-        address to = delegatees[idx % delegatees.length];
-
-        vm.prank(contributor);
-        account.reDelegate(to);
-
-        g_callCounts["reDelegate"]++;
     }
 
     /// @notice Bounded forward time travel. Capped at 90 days: small

@@ -54,7 +54,6 @@ abstract contract BaseTest is Test, Events {
             otherContributor: _user("otherContributor"),
             attacker: _user("attacker"),
             recipient: _user("recipient"),
-            delegatee: _user("delegatee"),
             goodSamaritan: _user("goodSamaritan")
         });
 

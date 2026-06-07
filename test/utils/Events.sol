@@ -11,7 +11,6 @@ abstract contract Events {
     //////////////////////////////////////////////////////////////*/
 
     event Initialized(address indexed contributor, address indexed token, uint64 unlockTimestamp);
-    event Redelegated(address indexed to);
     event Withdrawn(address indexed to, uint256 amount);
     event AllTokensWithdrawn(address indexed contributor, uint256 balance);
     event NonBLOKCTokensRecovered(address indexed token, address indexed to, uint256 amount);

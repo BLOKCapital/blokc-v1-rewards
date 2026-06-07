@@ -113,7 +113,7 @@ contract AccountFuzzTest is BaseTest {
         ts = uint64(bound(ts, Constants.AT_UNLOCK, type(uint64).max));
         vm.warp(ts);
 
-        uint256 ambBefore = blokc.balanceOf(users.contributor);
+        uint256 contribBefore = blokc.balanceOf(users.contributor);
 
         vm.expectEmit(true, false, false, true, address(account));
         emit AllTokensWithdrawn(users.contributor, balance);
@@ -121,7 +121,7 @@ contract AccountFuzzTest is BaseTest {
         vm.prank(users.contributor);
         account.withdrawTokensAll();
 
-        assertEq(blokc.balanceOf(users.contributor), ambBefore + balance, "contributor received full balance");
+        assertEq(blokc.balanceOf(users.contributor), contribBefore + balance, "contributor received full balance");
         assertEq(account.balanceOf(), 0, "account fully swept");
     }
 
@@ -140,18 +140,5 @@ contract AccountFuzzTest is BaseTest {
 
         assertEq(foreign.balanceOf(to), amount, "foreign token moved exactly");
         assertEq(account.balanceOf(), Constants.DEFAULT_FUND_AMOUNT, "BLOKC untouched by recovery");
-    }
-
-    /// @notice Re-delegating to any non-zero delegatee always routes the
-    ///         account's full voting power to that delegatee.
-    function testFuzz_reDelegate_routesAllVotes(address to) public {
-        BLOKCContributorAccount account = _fundedAccount();
-        vm.assume(to != address(0));
-
-        vm.prank(users.contributor);
-        account.reDelegate(to);
-
-        assertEq(blokc.delegates(address(account)), to, "delegatee set");
-        assertEq(blokc.getVotes(to), Constants.DEFAULT_FUND_AMOUNT, "delegatee holds full vote weight");
     }
 }

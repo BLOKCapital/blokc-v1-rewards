@@ -12,3 +12,8 @@ docs/
 
 # Dotenv file
 .env
+
+# Static analysis artifacts
+*.dot
+*.call-graph.dot
+report.md

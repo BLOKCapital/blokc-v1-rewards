@@ -46,22 +46,16 @@ contract AccountInvariant is StdInvariant, Test {
         vm.prank(contributor);
         account = BLOKCContributorAccount(factory.createContributorAccount());
 
-        address[] memory delegatees = new address[](3);
-        delegatees[0] = makeAddr("delegatee0");
-        delegatees[1] = makeAddr("delegatee1");
-        delegatees[2] = contributor;
-
-        handler = new AccountHandler(account, blokc, foreignToken, contributor, delegatees);
+        handler = new AccountHandler(account, blokc, foreignToken, contributor);
 
         // Only the handler is fuzzed, and only its action selectors.
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](6);
         selectors[0] = AccountHandler.fund.selector;
         selectors[1] = AccountHandler.fundForeign.selector;
         selectors[2] = AccountHandler.withdraw.selector;
         selectors[3] = AccountHandler.withdrawAll.selector;
         selectors[4] = AccountHandler.recoverForeign.selector;
-        selectors[5] = AccountHandler.reDelegate.selector;
-        selectors[6] = AccountHandler.skipTime.selector;
+        selectors[5] = AccountHandler.skipTime.selector;
 
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
         targetContract(address(handler));

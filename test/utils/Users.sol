@@ -15,8 +15,6 @@ struct Users {
     address payable attacker;
     /// @notice Withdrawal recipient distinct from the contributor.
     address payable recipient;
-    /// @notice Delegatee target used in `reDelegate` tests.
-    address payable delegatee;
     /// @notice Permissionless caller used in factory tests where someone
     ///         other than the contributor deploys the account.
     address payable goodSamaritan;

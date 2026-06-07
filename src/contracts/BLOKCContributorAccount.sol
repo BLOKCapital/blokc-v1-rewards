@@ -84,11 +84,6 @@ contract BLOKCContributorAccount is Initializable {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when the contributor redirects the account's voting
-    ///         power to a new delegatee via {reDelegate}.
-    /// @param to The new delegatee chosen by the contributor.
-    event Redelegated(address indexed to);
-
     /// @notice Emitted when the contributor sweeps the account's full
     ///         $BLOKC balance to themselves via {withdrawTokensAll}.
     /// @param contributor The recipient — always the account's contributor.
@@ -231,38 +226,8 @@ contract BLOKCContributorAccount is Initializable {
     }
 
     /*//////////////////////////////////////////////////////////////
-                          DELEGATION INTERNALS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Internal helper that delegates the account's voting power
-    ///         to `_to`, with a zero-address guard.
-    /// @dev    Used by {reDelegate}. Reverts with {ZeroAddress} on a zero
-    ///         delegatee.
-    /// @param _to The new delegatee for the account's $BLOKC votes.
-    function _delegate(address _to) internal {
-        if (_to == address(0)) {
-            revert ZeroAddress();
-        }
-
-        IVotes(token).delegate(_to);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                           CONTRIBUTOR ACTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice Redirects the account's voting power to a new delegatee.
-    /// @dev    Callable at any time, before or after unlock — the lock
-    ///         applies to fund movement, not to governance routing.
-    ///         Restricted to the contributor via {onlyContributor}. Emits
-    ///         {Redelegated} on success.
-    /// @param _to The new delegatee. Must be non-zero (enforced by
-    ///            {_delegate}).
-    function reDelegate(address _to) external onlyContributor {
-        emit Redelegated(_to);
-
-        _delegate(_to);
-    }
 
     /// @notice Recovers a non-$BLOKC ERC20 token mistakenly sent to this
     ///         account.
