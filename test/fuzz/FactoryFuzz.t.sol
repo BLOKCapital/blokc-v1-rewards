@@ -29,8 +29,8 @@ contract FactoryFuzzTest is BaseTest {
 
         address predicted = factory.predictContributorAccount(contributor);
 
-        vm.prank(users.goodSamaritan);
-        BLOKCContributorAccount account = BLOKCContributorAccount(factory.createContributorAccount(contributor));
+        vm.prank(contributor);
+        BLOKCContributorAccount account = BLOKCContributorAccount(factory.createContributorAccount());
 
         assertEq(address(account), predicted, "deployed at predicted address");
         assertEq(account.contributor(), contributor, "ownership bound to named contributor");
@@ -47,26 +47,26 @@ contract FactoryFuzzTest is BaseTest {
 
         address predictedBefore = factory.predictContributorAccount(contributor);
 
-        vm.prank(users.goodSamaritan);
-        address deployed = factory.createContributorAccount(contributor);
+        vm.prank(contributor);
+        address deployed = factory.createContributorAccount();
 
         assertEq(deployed, predictedBefore, "deployed matches pre-deploy prediction");
         assertEq(factory.predictContributorAccount(contributor), deployed, "prediction stable after deploy");
     }
 
-    /// @notice For any non-zero contributor, creating twice (and across
-    ///         different callers) is idempotent: the same address is
-    ///         returned and the registry grows by exactly one.
+    /// @notice For any non-zero contributor, creating twice is
+    ///         idempotent: the same address is returned and the registry
+    ///         grows by exactly one.
     function testFuzz_create_idempotent(address contributor) public {
         _assumeValidContributor(contributor);
 
         vm.prank(contributor);
         address first = factory.createContributorAccount();
 
-        vm.prank(users.goodSamaritan);
-        address second = factory.createContributorAccount(contributor);
+        vm.prank(contributor);
+        address second = factory.createContributorAccount();
 
-        assertEq(first, second, "same account across repeated/cross-caller create");
+        assertEq(first, second, "same account on repeated create");
         assertEq(factory.accountOf(contributor), first, "registry records the account");
         assertTrue(factory.holdsAccount(contributor), "holdsAccount set");
         assertEq(factory.getAccountsLength(), 1, "registry grew by exactly one");

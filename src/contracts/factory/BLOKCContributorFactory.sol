@@ -24,11 +24,10 @@ import {BLOKCContributorAccount} from "../BLOKCContributorAccount.sol";
 ///         the chain.
 /// @dev    Implements BIP-002 §11.2–§11.4. Key properties:
 ///
-///         - Permissionless: no owner, no admin, no privileged callers.
-///           Anyone may call {createContributorAccount} to deploy their
-///           own account, or the address-arg overload to deploy someone
-///           else's account on their behalf — the resulting contract is
-///           owned by the named contributor, never by the caller.
+///         - Self-deploy only: no owner, no admin, no privileged callers.
+///           A contributor may only call {createContributorAccount} to
+///           deploy their own account — no one can deploy on someone
+///           else's behalf.
 ///         - Idempotent: a second create call for the same contributor
 ///           returns the existing address. The registry never grows
 ///           past one entry per contributor.
@@ -163,34 +162,21 @@ contract BLOKCContributorFactory {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Deploys (or returns) the caller's own contributor account.
-    /// @dev    Convenience wrapper around
-    ///         {_createContributorAccount}(`msg.sender`). Idempotent — a
-    ///         second call from the same address returns the existing
-    ///         account address without redeploying or emitting.
+    /// @dev    Calls {_createContributorAccount}(`msg.sender`). A
+    ///         contributor can only create an account for themselves — no
+    ///         third party can deploy on someone else's behalf. Idempotent:
+    ///         a second call returns the existing address without
+    ///         redeploying or emitting.
     /// @return The caller's deterministic account address.
     function createContributorAccount() external returns (address) {
         return _createContributorAccount(msg.sender);
-    }
-
-    /// @notice Deploys (or returns) `contributor`'s account on their
-    ///         behalf.
-    /// @dev    Per BIP-002 §11.3 anyone may call this. The resulting
-    ///         contract is owned by `contributor`, NEVER by
-    ///         `msg.sender` — the caller simply pays the deploy gas as
-    ///         a permissionless courtesy. Idempotent.
-    /// @param contributor The contributor whose account should be
-    ///                   deployed. Must be non-zero.
-    /// @return The deterministic account address for `contributor`.
-    function createContributorAccount(address contributor) external returns (address) {
-        return _createContributorAccount(contributor);
     }
 
     /*//////////////////////////////////////////////////////////////
                             CREATE — INTERNAL
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Core deploy-or-return routine shared by both create
-    ///         entry points.
+    /// @notice Core deploy-or-return routine.
     /// @dev    On a fresh contributor:
     ///           1. Clones {implementation} via
     ///              {Clones-cloneDeterministic} with

@@ -24,7 +24,7 @@ import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFac
 ///           1. Factory deployed with this token as `_token`.
 ///           2. Factory.createContributorAccount(contributor) is called.
 ///           3. During initialize -> delegate(contributor), this token re-enters
-///              factory.createContributorAccount(contributor).
+///              factory.createContributorAccount().
 ///           4. Test asserts: same address returned, `accounts.length == 1`,
 ///              exactly one `ContributorAccountCreated` event.
 ///
@@ -66,7 +66,7 @@ contract MaliciousVotesToken is ERC20, ERC20Votes {
 
         if (reentryArmed && reentryDepth == 0) {
             reentryDepth = 1;
-            reentryReturn = factory.createContributorAccount(reentryContributor);
+            reentryReturn = factory.createContributorAccount();
             // Disarm so deeper recursion doesn't loop indefinitely if the
             // short-circuit fails.
             reentryArmed = false;
