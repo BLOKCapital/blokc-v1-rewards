@@ -48,21 +48,15 @@ contract FactoryHandler is CommonBase, StdCheats, StdUtils {
                               HANDLER ACTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Create-or-return for `contributor`, picked from the bounded
-    ///         pool. Pranks as the contributor half the time and as a
-    ///         random "good samaritan" the other half, so both factory
-    ///         overload semantics get exercised — but always via the
-    ///         address-arg overload so the assertion is "bound to the
-    ///         arg, not the caller".
-    function createForPoolMember(uint256 idx, uint256 callerSeed) external {
+    /// @notice Create-or-return for a contributor from the bounded pool.
+    ///         Only the contributor themselves can create their account,
+    ///         so we prank as them.
+    function createForPoolMember(uint256 idx) external {
         if (contributorPool.length == 0) return;
         address contributor = contributorPool[idx % contributorPool.length];
-        address caller =
-            (callerSeed & 1 == 0) ? contributor : address(uint160(uint256(keccak256(abi.encode(callerSeed)))));
-        if (caller == address(0)) caller = contributor;
 
-        vm.prank(caller);
-        address returned = factory.createContributorAccount(contributor);
+        vm.prank(contributor);
+        address returned = factory.createContributorAccount();
 
         if (!g_isSeen[contributor]) {
             g_isSeen[contributor] = true;

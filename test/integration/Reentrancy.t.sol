@@ -1,74 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Vm} from "forge-std/Vm.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
-import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {MaliciousERC20} from "test/mocks/MaliciousERC20.sol";
-import {MaliciousVotesToken} from "test/mocks/MaliciousVotesToken.sol";
 import {Constants} from "test/utils/Constants.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title  ReentrancyTest
-/// @notice Integration tests that exercise the two adversarial mocks the
-///         repo ships but never previously used:
-///           - {MaliciousVotesToken} re-enters the factory from inside the
-///             `delegate` callback fired during `initialize`.
-///           - {MaliciousERC20} mis-behaves during `recoverERC20`'s
-///             `safeTransfer` (returns false, reverts, or re-enters).
-///
-/// @dev    Neither {BLOKCContributorAccount} nor {BLOKCContributorFactory}
-///         uses a `ReentrancyGuard`; their safety rests on (a) the
-///         factory's checks-effects-interactions ordering (registry written
-///         before `initialize`) and (b) `SafeERC20` + the `onlyContributor`
-///         gate on `recoverERC20`. These tests pin both claims.
+/// @notice Integration tests exercising {BLOKCContributorAccount}'s
+///         `recoverERC20` against adversarial ERC20 tokens — return-false,
+///         hard-revert, and reentrant tokens. The `onlyContributor` gate
+///         blocks all token-callback reentrancy since `msg.sender` is the
+///         token during callbacks, never the contributor.
 contract ReentrancyTest is BaseTest {
-    bytes32 internal constant CREATED_SIG = keccak256("ContributorAccountCreated(address,address)");
-
-    /*//////////////////////////////////////////////////////////////
-                    FACTORY REENTRY VIA delegate()
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Proves the factory's CEI ordering makes a reentrant
-    ///         `createContributorAccount` during `initialize → delegate`
-    ///         safe: the reentry hits the idempotent short-circuit, so the
-    ///         account address is stable, the registry holds exactly one
-    ///         entry, and exactly one `ContributorAccountCreated` fires.
-    /// @dev    Deploys a fresh factory bound to {MaliciousVotesToken}; the
-    ///         clone's `initialize` calls `delegate`, which re-enters the
-    ///         factory for the same contributor.
-    function test_factory_reentryViaDelegate_isIdempotent() public {
-        MaliciousVotesToken evilVotes = new MaliciousVotesToken();
-        BLOKCContributorFactory evilFactory =
-            new BLOKCContributorFactory(address(evilVotes), address(implementation), Constants.UNLOCK_TIMESTAMP);
-
-        evilVotes.arm(evilFactory, users.contributor);
-
-        address predicted = evilFactory.predictContributorAccount(users.contributor);
-
-        vm.recordLogs();
-        vm.prank(users.contributor);
-        address deployed = evilFactory.createContributorAccount(users.contributor);
-        Vm.Log[] memory logs = vm.getRecordedLogs();
-
-        // The reentrant create returned the SAME address as the outer create.
-        assertEq(evilVotes.reentryReturn(), deployed, "reentrant create returned same address");
-        assertEq(deployed, predicted, "deployed at predicted address");
-        assertEq(evilVotes.reentryDepth(), 1, "reentry actually occurred");
-
-        // Registry grew by exactly one despite the reentry.
-        assertEq(evilFactory.getAccountsLength(), 1, "exactly one account registered");
-        assertEq(evilFactory.accountOf(users.contributor), deployed, "registry points at the account");
-
-        // Exactly one ContributorAccountCreated across the whole call tree.
-        uint256 created;
-        for (uint256 i; i < logs.length; ++i) {
-            if (logs[i].topics[0] == CREATED_SIG) created++;
-        }
-        assertEq(created, 1, "exactly one ContributorAccountCreated emitted");
-    }
-
     /*//////////////////////////////////////////////////////////////
                     recoverERC20 vs MISBEHAVING ERC20
     //////////////////////////////////////////////////////////////*/

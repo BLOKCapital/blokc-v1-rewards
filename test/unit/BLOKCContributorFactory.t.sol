@@ -155,61 +155,10 @@ contract BLOKCContributorFactoryTest is BaseTest {
     }
 
     /*//////////////////////////////////////////////////////////////
-                       CREATE — THIRD-PARTY OVERLOAD
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Asserts `createContributorAccount(address)` (the
-    ///         third-party overload) reverts with {ZeroAddress} when
-    ///         the contributor argument is zero.
-    function test_createContributorAccount_Other_revertWhen_ContributorIsZero() public {
-        vm.prank(users.goodSamaritan);
-        vm.expectRevert(BLOKCContributorFactory.ZeroAddress.selector);
-        factory.createContributorAccount(address(0));
-    }
-
-    /// @notice Asserts that when someone *other* than the contributor
-    ///         deploys their account, ownership still belongs to the
-    ///         **named** contributor, never to the caller.
-    /// @dev    This is the headline property of the third-party
-    ///         overload (BIP-002 §11.3). Verifies via both `contributor()`
-    ///         and `delegates(account)`.
-    function test_createContributorAccount_Other_assignsOwnershipToNamedContributor() public {
-        vm.prank(users.goodSamaritan);
-        BLOKCContributorAccount a = BLOKCContributorAccount(factory.createContributorAccount(users.contributor));
-        assertEq(a.contributor(), users.contributor, "contributor is the named one");
-        assertTrue(a.contributor() != users.goodSamaritan, "caller is not owner");
-        assertEq(blokc.delegates(address(a)), users.contributor, "delegate is the contributor");
-    }
-
-    /// @notice Asserts the third-party overload deploys at the same
-    ///         predicted CREATE2 address as the self overload.
-    /// @dev    Pins the invariant that the predicted address depends
-    ///         on the contributor alone — never on the caller.
-    function test_createContributorAccount_Other_deploysAtSamePredictedAddress() public {
-        address predicted = _predicted(users.contributor);
-        vm.prank(users.goodSamaritan);
-        address actual = factory.createContributorAccount(users.contributor);
-        assertEq(actual, predicted);
-    }
-
-    /// @notice Asserts the third-party overload also emits
-    ///         `ContributorAccountCreated(contributor, account)`, with the
-    ///         **contributor** as the indexed actor (not the caller).
-    function test_createContributorAccount_Other_emitsEvent() public {
-        address predicted = _predicted(users.contributor);
-
-        vm.expectEmit(true, true, false, false, address(factory));
-        emit ContributorAccountCreated(users.contributor, predicted);
-
-        vm.prank(users.goodSamaritan);
-        factory.createContributorAccount(users.contributor);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                               IDEMPOTENCY
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Asserts a second self-create call from the same address
+    /// @notice Asserts a second create call from the same contributor
     ///         returns the existing account address without growing the
     ///         `accounts` array.
     function test_createContributorAccount_Idempotent_selfTwiceReturnsSameAddress() public {
@@ -217,22 +166,6 @@ contract BLOKCContributorFactoryTest is BaseTest {
         address first = factory.createContributorAccount();
         vm.prank(users.contributor);
         address second = factory.createContributorAccount();
-        assertEq(first, second);
-        assertEq(factory.getAccountsLength(), 1);
-    }
-
-    /// @notice Asserts idempotency holds across **different callers**:
-    ///         self-create followed by a third-party "re-create" for
-    ///         the same contributor returns the same address and does
-    ///         not grow the registry.
-    function test_createContributorAccount_Idempotent_acrossDifferentCallers() public {
-        vm.prank(users.contributor);
-        address first = factory.createContributorAccount();
-
-        // Different caller,same contributor tosame account.
-        vm.prank(users.goodSamaritan);
-        address second = factory.createContributorAccount(users.contributor);
-
         assertEq(first, second);
         assertEq(factory.getAccountsLength(), 1);
     }
@@ -308,12 +241,13 @@ contract BLOKCContributorFactoryTest is BaseTest {
 
     /// @notice Deploys `n` accounts for distinct synthetic contributors and
     ///         returns their addresses in registry (deploy) order.
-    /// @dev    Uses the third-party overload with low non-zero salts that
-    ///         can't collide with the keccak-derived named users.
+    /// @dev    Pranks as each contributor since only self-deploy is allowed.
     function _deployN(uint256 n) internal returns (address[] memory expected) {
         expected = new address[](n);
         for (uint256 i = 0; i < n; ++i) {
-            expected[i] = factory.createContributorAccount(address(uint160(0x1000 + i)));
+            address contributor = address(uint160(0x1000 + i));
+            vm.prank(contributor);
+            expected[i] = factory.createContributorAccount();
         }
     }
 

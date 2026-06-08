@@ -17,14 +17,9 @@ import {Constants} from "test/utils/Constants.sol";
 ///         contributors — properties no single unit test exercises.
 contract LifecycleTest is BaseTest {
     /// @notice Full happy lifecycle:
-    ///         predict → pre-fund the predicted address → third-party deploy
+    ///         predict → pre-fund the predicted address → contributor deploys
     ///         → account captures the pre-funded balance (voting power delegated)
     ///         → warp to unlock → withdraw to an external recipient.
-    /// @dev    Pre-funding happens BEFORE any contract exists at the
-    ///         address, proving the clone inherits the balance sitting at
-    ///         its CREATE2 address. Deployment is done by `goodSamaritan`
-    ///         to prove the courtesy-deploy path still yields an
-    ///         contributor-owned, funded account.
     function test_prefundThenDeployDelegateWithdraw() public {
         // 1. Predict the address before anything is deployed there.
         address predicted = factory.predictContributorAccount(users.contributor);
@@ -34,9 +29,9 @@ contract LifecycleTest is BaseTest {
         _fundAccount(predicted, Constants.DEFAULT_FUND_AMOUNT);
         assertEq(blokc.balanceOf(predicted), Constants.DEFAULT_FUND_AMOUNT, "predicted address holds pre-funded BLOKC");
 
-        // 3. A third party deploys the account on the contributor's behalf.
-        vm.prank(users.goodSamaritan);
-        BLOKCContributorAccount account = BLOKCContributorAccount(factory.createContributorAccount(users.contributor));
+        // 3. The contributor deploys their own account.
+        vm.prank(users.contributor);
+        BLOKCContributorAccount account = BLOKCContributorAccount(factory.createContributorAccount());
         assertEq(address(account), predicted, "deployed exactly at the pre-funded address");
 
         // 4. The clone now owns the pre-funded balance and is contributor-owned.
