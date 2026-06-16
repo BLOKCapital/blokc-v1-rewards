@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 
 /// @title  BLOKCDistributorTest
@@ -81,7 +80,7 @@ contract BLOKCDistributorTest is BaseTest {
     function test_constructor_revertWhen_TokenIsZero() public {
         address[] memory s = _signers(2);
         vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
-        new BLOKCDistributor(address(0), factory, users.aiProposer, users.distributorOwner, s, 2);
+        new BLOKCDistributor(address(0), factory, users.aiProposer, users.distributorOwner, s);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when
@@ -90,7 +89,7 @@ contract BLOKCDistributorTest is BaseTest {
         address[] memory s = _signers(2);
         vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         new BLOKCDistributor(
-            address(blokc), BLOKCContributorFactory(address(0)), users.aiProposer, users.distributorOwner, s, 2
+            address(blokc), BLOKCContributorFactory(address(0)), users.aiProposer, users.distributorOwner, s
         );
     }
 
@@ -99,7 +98,7 @@ contract BLOKCDistributorTest is BaseTest {
     function test_constructor_revertWhen_ProposerIsZero() public {
         address[] memory s = _signers(2);
         vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
-        new BLOKCDistributor(address(blokc), factory, address(0), users.distributorOwner, s, 2);
+        new BLOKCDistributor(address(blokc), factory, address(0), users.distributorOwner, s);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when
@@ -107,31 +106,23 @@ contract BLOKCDistributorTest is BaseTest {
     function test_constructor_revertWhen_OwnerIsZero() public {
         address[] memory s = _signers(2);
         vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, address(0), s, 2);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, address(0), s);
     }
 
-    /// @notice Asserts the constructor reverts with {ZeroThreshold} when
-    ///         `_threshold` is zero.
-    function test_constructor_revertWhen_ThresholdIsZero() public {
-        address[] memory s = _signers(2);
-        vm.expectRevert(BLOKCDistributor.ZeroThreshold.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 0);
+    /// @notice Asserts the constructor reverts with {InsufficientSigners}
+    ///         when fewer than 2 signers are provided.
+    function test_constructor_revertWhen_TooFewSigners() public {
+        address[] memory s = _signers(1);
+        vm.expectRevert(BLOKCDistributor.InsufficientSigners.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
     }
 
-    /// @notice Asserts the constructor reverts with {ZeroLength} when
-    ///         `_signers` is empty.
+    /// @notice Asserts the constructor reverts with {InsufficientSigners}
+    ///         when `_signers` is empty.
     function test_constructor_revertWhen_SignersEmpty() public {
         address[] memory s = new address[](0);
-        vm.expectRevert(BLOKCDistributor.ZeroLength.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
-    }
-
-    /// @notice Asserts the constructor reverts with {InsufficientApprovals}
-    ///         when `_threshold` exceeds the number of signers.
-    function test_constructor_revertWhen_ThresholdExceedsSigners() public {
-        address[] memory s = _signers(2);
-        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 3);
+        vm.expectRevert(BLOKCDistributor.InsufficientSigners.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when a
@@ -141,7 +132,7 @@ contract BLOKCDistributorTest is BaseTest {
         s[0] = users.signer1;
         s[1] = address(0);
         vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
     }
 
     /// @notice Asserts the constructor reverts when a signer appears twice.
@@ -150,21 +141,19 @@ contract BLOKCDistributorTest is BaseTest {
         s[0] = users.signer1;
         s[1] = users.signer1;
         vm.expectRevert(BLOKCDistributor.DuplicateSigner.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
     }
 
     /// @notice Asserts the constructor wires up immutables, mutable state
     ///         and initial signers correctly.
     function test_constructor_setsState() public {
         address[] memory s = _signers(2);
-        BLOKCDistributor d =
-            new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        BLOKCDistributor d = new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
 
         assertEq(d.token(), address(blokc));
         assertEq(address(d.factory()), address(factory));
         assertEq(d.proposer(), users.aiProposer);
         assertEq(d.owner(), users.distributorOwner);
-        assertEq(d.threshold(), 2);
         assertEq(d.getSignerCount(), 2);
         assertTrue(d.isSigner(s[0]));
         assertTrue(d.isSigner(s[1]));
@@ -691,7 +680,7 @@ contract BLOKCDistributorTest is BaseTest {
     function test_removeSigner_revertWhen_WouldDropBelowThreshold() public {
         // Default: 2 signers, threshold 2 — cannot remove any
         vm.prank(users.distributorOwner);
-        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientSigners.selector);
         distributor.removeSigner(users.signer1);
     }
 
@@ -748,55 +737,6 @@ contract BLOKCDistributorTest is BaseTest {
         distributor.updateProposer(newProposer);
 
         assertEq(distributor.proposer(), newProposer);
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                           ADMIN — UPDATE THRESHOLD
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Asserts {updateThreshold} reverts with {NotOwner}.
-    function test_updateThreshold_revertWhen_NotOwner() public {
-        vm.prank(users.attacker);
-        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
-        distributor.updateThreshold(1);
-    }
-
-    /// @notice Asserts {updateThreshold} reverts with {InsufficientApprovals}
-    ///         when the new threshold is below MIN_THRESHOLD (2).
-    function test_updateThreshold_revertWhen_BelowMinThreshold() public {
-        vm.prank(users.distributorOwner);
-        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
-        distributor.updateThreshold(1);
-    }
-
-    /// @notice Asserts {updateThreshold} reverts when threshold exceeds
-    ///         signer count.
-    function test_updateThreshold_revertWhen_ExceedsSigners() public {
-        vm.prank(users.distributorOwner);
-        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
-        distributor.updateThreshold(3); // only 2 signers
-    }
-
-    /// @notice Asserts {updateThreshold} reverts with {SameAddress}
-    ///         (reused error) when the new threshold equals the current.
-    function test_updateThreshold_revertWhen_SameThreshold() public {
-        vm.prank(users.distributorOwner);
-        vm.expectRevert(BLOKCDistributor.SameAddress.selector);
-        distributor.updateThreshold(2); // already 2
-    }
-
-    /// @notice Asserts {updateThreshold} succeeds with valid new value.
-    function test_updateThreshold_succeeds() public {
-        // Add a third signer first so we have room
-        vm.prank(users.distributorOwner);
-        distributor.addSigner(_contributor(99));
-
-        vm.prank(users.distributorOwner);
-        vm.expectEmit(false, false, false, false, address(distributor));
-        emit ThresholdUpdated(2, 3);
-        distributor.updateThreshold(3);
-
-        assertEq(distributor.threshold(), 3);
     }
 
     /*//////////////////////////////////////////////////////////////

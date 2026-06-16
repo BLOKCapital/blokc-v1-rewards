@@ -16,9 +16,9 @@ import {BLOKCContributorFactory} from "./factory/BLOKCContributorFactory.sol";
 
 /// @title  BLOKCDistributor
 /// @author BLOK Capital DAO
-/// @notice AI-proposed, multisig-approved weekly reward distribution for
+/// @notice AI-proposed, all-signers-must-approve weekly reward distribution for
 ///         contributor accounts. The AI proposer submits a batch of
-///         (contributor, amount) pairs; after two designated signers
+///         (contributor, amount) pairs; after ALL designated signers
 ///         approve, anyone can execute the distribution, which transfers
 ///         $BLOKC to each contributor's deterministic account address.
 ///
@@ -34,7 +34,7 @@ import {BLOKCContributorFactory} from "./factory/BLOKCContributorFactory.sol";
 ///           {predictContributorAccount} returns valid deterministic
 ///           addresses.
 ///         - The proposer (AI wallet) is trusted to submit fair scores,
-///           but is gated by the 2-of-N signer threshold so no single
+///           but is gated by unanimous signer approval so no single
 ///           key can move tokens.
 ///         - The owner is a DAO multisig that manages signers and can
 ///           recover tokens.
@@ -57,18 +57,12 @@ contract BLOKCDistributor {
     /// @notice The AI wallet authorized to propose distributions.
     address public proposer;
 
-    /// @notice The admin address that manages signers, proposer and threshold.
+    /// @notice The admin address that manages signers and the proposer.
     address public owner;
 
-    /// @notice The minimum number of approvals required — even the owner cannot
-    ///         drop the threshold below this. Defense-in-depth against a
-    ///         compromised DAO multisig.
-    uint256 public constant MIN_THRESHOLD = 2;
-
-    /// @notice The number of signer approvals required to execute a distribution.
-    uint256 public threshold;
-
-    /// @notice The list of authorized signers.
+    /// @notice The list of authorized signers. All signers must approve
+    ///         before a distribution can be executed. The minimum number
+    ///         of signers is 2, enforced at construction and on removal.
     address[] public signers;
 
     /// @notice Quick lookup: is this address an authorized signer?
@@ -138,11 +132,6 @@ contract BLOKCDistributor {
     /// @param newProposer The new proposer.
     event ProposerUpdated(address indexed oldProposer, address indexed newProposer);
 
-    /// @notice Emitted when the approval threshold is updated.
-    /// @param oldThreshold The previous threshold.
-    /// @param newThreshold The new threshold.
-    event ThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
-
     /// @notice Emitted when the owner address is updated.
     /// @param oldOwner The previous owner.
     /// @param newOwner The new owner.
@@ -164,7 +153,6 @@ contract BLOKCDistributor {
     error ZeroAddress();
     error ZeroAmount();
     error ZeroLength();
-    error ZeroThreshold();
     error LengthMismatch();
     error InvalidEpochId();
     error AlreadyProposed();
@@ -172,7 +160,8 @@ contract BLOKCDistributor {
     error AlreadyExecuted();
     error AlreadyApproved();
     error DuplicateSigner();
-    error InsufficientApprovals();
+    error InsufficientSigners(); // fewer than 2 signers
+    error InsufficientApprovals(); // not all signers have approved
     error InsufficientBalance();
     error SameAddress();
 
@@ -200,35 +189,31 @@ contract BLOKCDistributor {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Binds the distributor to the $BLOKC token, factory, AI proposer,
-    ///         owner, initial signers and approval threshold.
-    /// @param _token     The canonical $BLOKC token. Must be non-zero.
-    /// @param _factory   The contributor account factory. Must be non-zero.
-    /// @param _proposer  The AI wallet authorized to propose distributions. Must be non-zero.
-    /// @param _owner     The admin address. Must be non-zero.
-    /// @param _signers   The initial set of authorized signers. Each must be non-zero.
-    /// @param _threshold The number of approvals required to execute. Must be non-zero
-    ///                   and ≤ _signers.length.
+    ///         owner and initial signers. All signers must approve every
+    ///         distribution. Minimum 2 signers enforced at deployment.
+    /// @param _token    The canonical $BLOKC token. Must be non-zero.
+    /// @param _factory  The contributor account factory. Must be non-zero.
+    /// @param _proposer The AI wallet authorized to propose distributions. Must be non-zero.
+    /// @param _owner    The admin address. Must be non-zero.
+    /// @param _signers  The initial set of authorized signers. Must contain at
+    ///                  least 2 addresses, each non-zero and unique.
     constructor(
         address _token,
         BLOKCContributorFactory _factory,
         address _proposer,
         address _owner,
-        address[] memory _signers,
-        uint256 _threshold
+        address[] memory _signers
     ) {
         if (_token == address(0)) revert ZeroAddress();
         if (address(_factory) == address(0)) revert ZeroAddress();
         if (_proposer == address(0)) revert ZeroAddress();
         if (_owner == address(0)) revert ZeroAddress();
-        if (_threshold == 0) revert ZeroThreshold();
-        if (_signers.length == 0) revert ZeroLength();
-        if (_threshold > _signers.length) revert InsufficientApprovals();
+        if (_signers.length < 2) revert InsufficientSigners();
 
         token = _token;
         factory = _factory;
         proposer = _proposer;
         owner = _owner;
-        threshold = _threshold;
 
         for (uint256 i = 0; i < _signers.length; ++i) {
             address signer = _signers[i];
@@ -308,7 +293,7 @@ contract BLOKCDistributor {
                            EXECUTE (PERMISSIONLESS)
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Executes a distribution once the approval threshold is met.
+    /// @notice Executes a distribution once ALL signers have approved.
     /// @dev    CEI: marks executed BEFORE transferring tokens. Sends $BLOKC
     ///         to each contributor's deterministic account address via
     ///         {BLOKCContributorFactory.predictContributorAccount}. The
@@ -323,7 +308,7 @@ contract BLOKCDistributor {
         Distribution storage dist = distributions[epochId];
         if (dist.proposedAt == 0) revert DistributionNotFound();
         if (dist.executed) revert AlreadyExecuted();
-        if (dist.approvalCount < threshold) revert InsufficientApprovals();
+        if (dist.approvalCount < signers.length) revert InsufficientApprovals();
 
         uint256 length = dist.contributors.length;
         uint256 totalAmount;
@@ -377,7 +362,7 @@ contract BLOKCDistributor {
     /// @param _signer The address to add. Must be non-zero and not already a signer.
     function addSigner(address _signer) external onlyOwner {
         if (_signer == address(0)) revert ZeroAddress();
-        if (isSigner[_signer]) revert AlreadyApproved(); // reuse: already a signer
+        if (isSigner[_signer]) revert AlreadyApproved();
 
         isSigner[_signer] = true;
         signers.push(_signer);
@@ -386,12 +371,12 @@ contract BLOKCDistributor {
     }
 
     /// @notice Removes a signer from the authorized set.
-    /// @dev    Reverts if removing this signer would drop the number of
-    ///         signers below the current threshold.
+    /// @dev    Reverts if removing this signer would drop the signer count
+    ///         below the minimum of 2.
     /// @param _signer The address to remove. Must be a current signer.
     function removeSigner(address _signer) external onlyOwner {
         if (!isSigner[_signer]) revert NotSigner();
-        if (signers.length <= threshold) revert InsufficientApprovals();
+        if (signers.length <= 2) revert InsufficientSigners();
 
         isSigner[_signer] = false;
 
@@ -416,18 +401,6 @@ contract BLOKCDistributor {
 
         emit ProposerUpdated(proposer, _newProposer);
         proposer = _newProposer;
-    }
-
-    /// @notice Updates the approval threshold.
-    /// @param _newThreshold The new threshold. Must be non-zero and not
-    ///                      exceed the current number of signers.
-    function updateThreshold(uint256 _newThreshold) external onlyOwner {
-        if (_newThreshold < MIN_THRESHOLD) revert InsufficientApprovals();
-        if (_newThreshold > signers.length) revert InsufficientApprovals();
-        if (_newThreshold == threshold) revert SameAddress();
-
-        emit ThresholdUpdated(threshold, _newThreshold);
-        threshold = _newThreshold;
     }
 
     /// @notice Transfers ownership to a new address.

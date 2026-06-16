@@ -41,7 +41,7 @@ contract DistributorReentrancyTest is Test {
         address[] memory signers = new address[](2);
         signers[0] = signer1;
         signers[1] = signer2;
-        distributor = new BLOKCDistributor(address(token), factory, proposer, owner, signers, 2);
+        distributor = new BLOKCDistributor(address(token), factory, proposer, owner, signers);
 
         // Fund the distributor with the malicious token
         token.mint(address(distributor), FUND_AMOUNT);

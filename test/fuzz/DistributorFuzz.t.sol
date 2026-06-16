@@ -6,7 +6,7 @@ import {BaseTest} from "test/utils/BaseTest.sol";
 
 /// @title  DistributorFuzzTest
 /// @notice Fuzz tests for {BLOKCDistributor} covering edge cases on
-///         amounts, thresholds, and approval ordering.
+///         amounts and approval ordering.
 contract DistributorFuzzTest is BaseTest {
     function setUp() public override {
         super.setUp();

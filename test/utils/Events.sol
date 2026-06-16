@@ -34,7 +34,6 @@ abstract contract Events {
     event SignerAdded(address indexed signer);
     event SignerRemoved(address indexed signer);
     event ProposerUpdated(address indexed oldProposer, address indexed newProposer);
-    event ThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
     event OwnerUpdated(address indexed oldOwner, address indexed newOwner);
     event TokensRecovered(address indexed recoveredToken, address indexed to, uint256 amount);
 }

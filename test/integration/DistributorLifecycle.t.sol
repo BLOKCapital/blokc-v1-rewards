@@ -165,14 +165,12 @@ contract DistributorLifecycleTest is BaseTest {
         assertEq(blokc.balanceOf(factory.predictContributorAccount(c[0])), 100e18);
     }
 
-    /// @notice Changing threshold from 2 to 3 (after adding a 3rd signer)
-    ///         means 2 approvals is no longer enough.
-    function test_thresholdIncrease_requiresMoreApprovals() public {
+    /// @notice After adding a 3rd signer, all 3 must approve before
+    ///         execution. 2 of 3 is not enough — all signers must approve.
+    function test_allSignersMustApprove_afterAddingSigner() public {
         address newSigner = address(0xCAFE);
-        vm.startPrank(users.distributorOwner);
+        vm.prank(users.distributorOwner);
         distributor.addSigner(newSigner);
-        distributor.updateThreshold(3);
-        vm.stopPrank();
 
         address[] memory c = _createContributors(1);
         uint256[] memory a = new uint256[](1);
@@ -186,7 +184,7 @@ contract DistributorLifecycleTest is BaseTest {
         vm.prank(users.signer2);
         distributor.approveDistribution(1);
 
-        // Only 2 of 3 required — cannot execute
+        // Only 2 of 3 — cannot execute (all signers must approve)
         vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.executeDistribution(1);
 

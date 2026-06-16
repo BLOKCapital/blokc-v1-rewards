@@ -59,7 +59,7 @@ contract Deploy is Script {
         distSigners[0] = vm.envAddress("DISTRIBUTOR_SIGNER_1");
         distSigners[1] = vm.envAddress("DISTRIBUTOR_SIGNER_2");
         BLOKCDistributor distributor =
-            new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, distSigners, 2);
+            new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, distSigners);
         console.log("BLOKCDistributor deployed:", address(distributor));
 
         // 6. Log constructor args for BLOKCDistributor verification.
@@ -71,7 +71,6 @@ contract Deploy is Script {
         console.log("  _owner:", distributorOwner);
         console.log("  _signers[0]:", distSigners[0]);
         console.log("  _signers[1]:", distSigners[1]);
-        console.log("  _threshold: 2");
         console.log("---");
 
         // 7. Smoke test: predict the first contributor address.
