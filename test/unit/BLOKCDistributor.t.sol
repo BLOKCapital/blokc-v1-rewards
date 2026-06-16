@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 
-/// @title  RewardDistributorTest
-/// @notice Unit tests for {RewardDistributor}.
+/// @title  BLOKCDistributorTest
+/// @notice Unit tests for {BLOKCDistributor}.
 /// @dev    Inherits the shared harness in {BaseTest}, which already
 ///         deploys a `distributor` with 2-of-2 multisig. Most tests use
 ///         that inherited distributor; constructor tests deploy fresh
@@ -22,7 +22,7 @@ import {BaseTest} from "test/utils/BaseTest.sol";
 ///           - CANCEL          : authorization, state reset, re-propose.
 ///           - ADMIN           : add/remove signer, update proposer/threshold/owner.
 ///           - VIEWS           : getter correctness.
-contract RewardDistributorTest is BaseTest {
+contract BLOKCDistributorTest is BaseTest {
     /*//////////////////////////////////////////////////////////////
                               HELPERS
     //////////////////////////////////////////////////////////////*/
@@ -80,16 +80,16 @@ contract RewardDistributorTest is BaseTest {
     ///         `_token` is `address(0)`.
     function test_constructor_revertWhen_TokenIsZero() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
-        new RewardDistributor(address(0), factory, users.aiProposer, users.distributorOwner, s, 2);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
+        new BLOKCDistributor(address(0), factory, users.aiProposer, users.distributorOwner, s, 2);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when
     ///         `_factory` is `address(0)`.
     function test_constructor_revertWhen_FactoryIsZero() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
-        new RewardDistributor(
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
+        new BLOKCDistributor(
             address(blokc), BLOKCContributorFactory(address(0)), users.aiProposer, users.distributorOwner, s, 2
         );
     }
@@ -98,40 +98,40 @@ contract RewardDistributorTest is BaseTest {
     ///         `_proposer` is `address(0)`.
     function test_constructor_revertWhen_ProposerIsZero() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
-        new RewardDistributor(address(blokc), factory, address(0), users.distributorOwner, s, 2);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
+        new BLOKCDistributor(address(blokc), factory, address(0), users.distributorOwner, s, 2);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when
     ///         `_owner` is `address(0)`.
     function test_constructor_revertWhen_OwnerIsZero() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, address(0), s, 2);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, address(0), s, 2);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroThreshold} when
     ///         `_threshold` is zero.
     function test_constructor_revertWhen_ThresholdIsZero() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.ZeroThreshold.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 0);
+        vm.expectRevert(BLOKCDistributor.ZeroThreshold.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 0);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroLength} when
     ///         `_signers` is empty.
     function test_constructor_revertWhen_SignersEmpty() public {
         address[] memory s = new address[](0);
-        vm.expectRevert(RewardDistributor.ZeroLength.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        vm.expectRevert(BLOKCDistributor.ZeroLength.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
     }
 
     /// @notice Asserts the constructor reverts with {InsufficientApprovals}
     ///         when `_threshold` exceeds the number of signers.
     function test_constructor_revertWhen_ThresholdExceedsSigners() public {
         address[] memory s = _signers(2);
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 3);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 3);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when a
@@ -140,8 +140,8 @@ contract RewardDistributorTest is BaseTest {
         address[] memory s = new address[](2);
         s[0] = users.signer1;
         s[1] = address(0);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
     }
 
     /// @notice Asserts the constructor reverts when a signer appears twice.
@@ -149,16 +149,16 @@ contract RewardDistributorTest is BaseTest {
         address[] memory s = new address[](2);
         s[0] = users.signer1;
         s[1] = users.signer1;
-        vm.expectRevert(RewardDistributor.DuplicateSigner.selector);
-        new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        vm.expectRevert(BLOKCDistributor.DuplicateSigner.selector);
+        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
     }
 
     /// @notice Asserts the constructor wires up immutables, mutable state
     ///         and initial signers correctly.
     function test_constructor_setsState() public {
         address[] memory s = _signers(2);
-        RewardDistributor d =
-            new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
+        BLOKCDistributor d =
+            new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
 
         assertEq(d.token(), address(blokc));
         assertEq(address(d.factory()), address(factory));
@@ -189,7 +189,7 @@ contract RewardDistributorTest is BaseTest {
         address[] memory c = _contributors(1);
         uint256[] memory a = _amounts(1, 100e18);
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotProposer.selector);
+        vm.expectRevert(BLOKCDistributor.NotProposer.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -203,7 +203,7 @@ contract RewardDistributorTest is BaseTest {
         address[] memory c = _contributors(1);
         uint256[] memory a = _amounts(1, 100e18);
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.InvalidEpochId.selector);
+        vm.expectRevert(BLOKCDistributor.InvalidEpochId.selector);
         distributor.proposeDistribution(0, c, a);
     }
 
@@ -213,7 +213,7 @@ contract RewardDistributorTest is BaseTest {
         address[] memory c = new address[](0);
         uint256[] memory a = new uint256[](0);
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.ZeroLength.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroLength.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -223,7 +223,7 @@ contract RewardDistributorTest is BaseTest {
         address[] memory c = _contributors(3);
         uint256[] memory a = _amounts(2, 100e18);
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.LengthMismatch.selector);
+        vm.expectRevert(BLOKCDistributor.LengthMismatch.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -235,7 +235,7 @@ contract RewardDistributorTest is BaseTest {
         c[1] = address(0);
         uint256[] memory a = _amounts(2, 100e18);
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -247,7 +247,7 @@ contract RewardDistributorTest is BaseTest {
         a[0] = 100e18;
         a[1] = 0;
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.ZeroAmount.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAmount.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -258,7 +258,7 @@ contract RewardDistributorTest is BaseTest {
         uint256[] memory a = _amounts(1, 100e18);
         _propose(1, c, a);
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.AlreadyProposed.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyProposed.selector);
         distributor.proposeDistribution(1, c, a);
     }
 
@@ -317,7 +317,7 @@ contract RewardDistributorTest is BaseTest {
     function test_approve_revertWhen_NotSigner() public {
         _propose(1, _contributors(1), _amounts(1, 100e18));
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotSigner.selector);
+        vm.expectRevert(BLOKCDistributor.NotSigner.selector);
         distributor.approveDistribution(1);
     }
 
@@ -329,7 +329,7 @@ contract RewardDistributorTest is BaseTest {
     ///         {DistributionNotFound} when the epoch was never proposed.
     function test_approve_revertWhen_DistributionNotFound() public {
         vm.prank(users.signer1);
-        vm.expectRevert(RewardDistributor.DistributionNotFound.selector);
+        vm.expectRevert(BLOKCDistributor.DistributionNotFound.selector);
         distributor.approveDistribution(99);
     }
 
@@ -340,7 +340,7 @@ contract RewardDistributorTest is BaseTest {
         _proposeApproveAndExecute(1, _contributors(1), _amounts(1, 100e18));
 
         vm.prank(users.signer1);
-        vm.expectRevert(RewardDistributor.AlreadyExecuted.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyExecuted.selector);
         distributor.approveDistribution(1);
     }
 
@@ -351,7 +351,7 @@ contract RewardDistributorTest is BaseTest {
         _approve(1, users.signer1);
 
         vm.prank(users.signer1);
-        vm.expectRevert(RewardDistributor.AlreadyApproved.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyApproved.selector);
         distributor.approveDistribution(1);
     }
 
@@ -393,7 +393,7 @@ contract RewardDistributorTest is BaseTest {
     /// @notice Asserts {executeDistribution} reverts with
     ///         {DistributionNotFound} when the epoch was never proposed.
     function test_execute_revertWhen_DistributionNotFound() public {
-        vm.expectRevert(RewardDistributor.DistributionNotFound.selector);
+        vm.expectRevert(BLOKCDistributor.DistributionNotFound.selector);
         distributor.executeDistribution(99);
     }
 
@@ -403,7 +403,7 @@ contract RewardDistributorTest is BaseTest {
         _fundDistributor();
         _proposeApproveAndExecute(1, _contributors(1), _amounts(1, 100e18));
 
-        vm.expectRevert(RewardDistributor.AlreadyExecuted.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyExecuted.selector);
         distributor.executeDistribution(1);
     }
 
@@ -414,7 +414,7 @@ contract RewardDistributorTest is BaseTest {
         _propose(1, _contributors(1), _amounts(1, 100e18));
         _approve(1, users.signer1); // only 1 of 2
 
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.executeDistribution(1);
     }
 
@@ -424,7 +424,7 @@ contract RewardDistributorTest is BaseTest {
         _fundDistributor();
         _propose(1, _contributors(1), _amounts(1, 100e18));
 
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.executeDistribution(1);
     }
 
@@ -436,7 +436,7 @@ contract RewardDistributorTest is BaseTest {
         _approve(1, users.signer2);
         // distributor was NOT funded
 
-        vm.expectRevert(RewardDistributor.InsufficientBalance.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientBalance.selector);
         distributor.executeDistribution(1);
     }
 
@@ -555,7 +555,7 @@ contract RewardDistributorTest is BaseTest {
     function test_cancel_revertWhen_NotProposer() public {
         _propose(1, _contributors(1), _amounts(1, 100e18));
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotProposer.selector);
+        vm.expectRevert(BLOKCDistributor.NotProposer.selector);
         distributor.cancelDistribution(1);
     }
 
@@ -563,7 +563,7 @@ contract RewardDistributorTest is BaseTest {
     ///         {DistributionNotFound} when the epoch was never proposed.
     function test_cancel_revertWhen_DistributionNotFound() public {
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.DistributionNotFound.selector);
+        vm.expectRevert(BLOKCDistributor.DistributionNotFound.selector);
         distributor.cancelDistribution(99);
     }
 
@@ -574,7 +574,7 @@ contract RewardDistributorTest is BaseTest {
         _proposeApproveAndExecute(1, _contributors(1), _amounts(1, 100e18));
 
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.AlreadyExecuted.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyExecuted.selector);
         distributor.cancelDistribution(1);
     }
 
@@ -631,7 +631,7 @@ contract RewardDistributorTest is BaseTest {
     ///         by a non-owner.
     function test_addSigner_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.addSigner(_contributor(99));
     }
 
@@ -639,7 +639,7 @@ contract RewardDistributorTest is BaseTest {
     ///         new signer is `address(0)`.
     function test_addSigner_revertWhen_ZeroAddress() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.addSigner(address(0));
     }
 
@@ -647,7 +647,7 @@ contract RewardDistributorTest is BaseTest {
     ///         a signer.
     function test_addSigner_revertWhen_AlreadySigner() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.AlreadyApproved.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyApproved.selector);
         distributor.addSigner(users.signer1);
     }
 
@@ -674,7 +674,7 @@ contract RewardDistributorTest is BaseTest {
     ///         by a non-owner.
     function test_removeSigner_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.removeSigner(users.signer1);
     }
 
@@ -682,7 +682,7 @@ contract RewardDistributorTest is BaseTest {
     ///         address is not a signer.
     function test_removeSigner_revertWhen_NotSigner() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.NotSigner.selector);
+        vm.expectRevert(BLOKCDistributor.NotSigner.selector);
         distributor.removeSigner(_contributor(99));
     }
 
@@ -691,7 +691,7 @@ contract RewardDistributorTest is BaseTest {
     function test_removeSigner_revertWhen_WouldDropBelowThreshold() public {
         // Default: 2 signers, threshold 2 — cannot remove any
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.removeSigner(users.signer1);
     }
 
@@ -719,14 +719,14 @@ contract RewardDistributorTest is BaseTest {
     /// @notice Asserts {updateProposer} reverts with {NotOwner}.
     function test_updateProposer_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.updateProposer(_contributor(99));
     }
 
     /// @notice Asserts {updateProposer} reverts with {ZeroAddress}.
     function test_updateProposer_revertWhen_ZeroAddress() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.updateProposer(address(0));
     }
 
@@ -734,7 +734,7 @@ contract RewardDistributorTest is BaseTest {
     ///         new proposer equals the current one.
     function test_updateProposer_revertWhen_SameAddress() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.SameAddress.selector);
+        vm.expectRevert(BLOKCDistributor.SameAddress.selector);
         distributor.updateProposer(users.aiProposer);
     }
 
@@ -757,7 +757,7 @@ contract RewardDistributorTest is BaseTest {
     /// @notice Asserts {updateThreshold} reverts with {NotOwner}.
     function test_updateThreshold_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.updateThreshold(1);
     }
 
@@ -765,7 +765,7 @@ contract RewardDistributorTest is BaseTest {
     ///         when the new threshold is below MIN_THRESHOLD (2).
     function test_updateThreshold_revertWhen_BelowMinThreshold() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.updateThreshold(1);
     }
 
@@ -773,7 +773,7 @@ contract RewardDistributorTest is BaseTest {
     ///         signer count.
     function test_updateThreshold_revertWhen_ExceedsSigners() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.updateThreshold(3); // only 2 signers
     }
 
@@ -781,7 +781,7 @@ contract RewardDistributorTest is BaseTest {
     ///         (reused error) when the new threshold equals the current.
     function test_updateThreshold_revertWhen_SameThreshold() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.SameAddress.selector);
+        vm.expectRevert(BLOKCDistributor.SameAddress.selector);
         distributor.updateThreshold(2); // already 2
     }
 
@@ -806,21 +806,21 @@ contract RewardDistributorTest is BaseTest {
     /// @notice Asserts {updateOwner} reverts with {NotOwner}.
     function test_updateOwner_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.updateOwner(_contributor(99));
     }
 
     /// @notice Asserts {updateOwner} reverts with {ZeroAddress}.
     function test_updateOwner_revertWhen_ZeroAddress() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.updateOwner(address(0));
     }
 
     /// @notice Asserts {updateOwner} reverts with {SameAddress}.
     function test_updateOwner_revertWhen_SameAddress() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.SameAddress.selector);
+        vm.expectRevert(BLOKCDistributor.SameAddress.selector);
         distributor.updateOwner(users.distributorOwner);
     }
 
@@ -843,7 +843,7 @@ contract RewardDistributorTest is BaseTest {
     /// @notice Asserts {recoverTokens} reverts with {NotOwner}.
     function test_recoverTokens_revertWhen_NotOwner() public {
         vm.prank(users.attacker);
-        vm.expectRevert(RewardDistributor.NotOwner.selector);
+        vm.expectRevert(BLOKCDistributor.NotOwner.selector);
         distributor.recoverTokens(address(blokc), users.recipient, 1e18);
     }
 
@@ -851,7 +851,7 @@ contract RewardDistributorTest is BaseTest {
     ///         token is zero.
     function test_recoverTokens_revertWhen_TokenIsZero() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.recoverTokens(address(0), users.recipient, 1e18);
     }
 
@@ -860,7 +860,7 @@ contract RewardDistributorTest is BaseTest {
     function test_recoverTokens_revertWhen_RecipientIsZero() public {
         _fundDistributor();
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAddress.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAddress.selector);
         distributor.recoverTokens(address(blokc), address(0), 1e18);
     }
 
@@ -868,7 +868,7 @@ contract RewardDistributorTest is BaseTest {
     ///         amount is zero.
     function test_recoverTokens_revertWhen_ZeroAmount() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroAmount.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAmount.selector);
         distributor.recoverTokens(address(blokc), users.recipient, 0);
     }
 
@@ -876,7 +876,7 @@ contract RewardDistributorTest is BaseTest {
     ///         when amount exceeds balance.
     function test_recoverTokens_revertWhen_InsufficientBalance() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.InsufficientBalance.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientBalance.selector);
         distributor.recoverTokens(address(blokc), users.recipient, 1_000_000e18);
     }
 

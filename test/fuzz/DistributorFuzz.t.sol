@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 
 /// @title  DistributorFuzzTest
-/// @notice Fuzz tests for {RewardDistributor} covering edge cases on
+/// @notice Fuzz tests for {BLOKCDistributor} covering edge cases on
 ///         amounts, thresholds, and approval ordering.
 contract DistributorFuzzTest is BaseTest {
     function setUp() public override {
@@ -26,7 +26,7 @@ contract DistributorFuzzTest is BaseTest {
         distributor.proposeDistribution(epochId, c, a);
 
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.AlreadyProposed.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyProposed.selector);
         distributor.proposeDistribution(epochId, c, a);
     }
 
@@ -72,7 +72,7 @@ contract DistributorFuzzTest is BaseTest {
         a[1] = 0;
 
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.ZeroAmount.selector);
+        vm.expectRevert(BLOKCDistributor.ZeroAmount.selector);
         distributor.proposeDistribution(1, c, a);
     }
 

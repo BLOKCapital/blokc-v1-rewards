@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 
@@ -41,7 +41,7 @@ abstract contract BaseTest is Test, Events {
     BLOKCContributorFactory internal factory;
 
     /// @notice Reward distributor with AI proposer + 2-of-2 multisig.
-    RewardDistributor internal distributor;
+    BLOKCDistributor internal distributor;
 
     /*//////////////////////////////////////////////////////////////
                                 SETUP
@@ -82,11 +82,10 @@ abstract contract BaseTest is Test, Events {
             address[] memory distSigners = new address[](2);
             distSigners[0] = users.signer1;
             distSigners[1] = users.signer2;
-            distributor = new RewardDistributor(
-                address(blokc), factory, users.aiProposer, users.distributorOwner, distSigners, 2
-            );
+            distributor =
+                new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, distSigners, 2);
         }
-        vm.label(address(distributor), "RewardDistributor");
+        vm.label(address(distributor), "BLOKCDistributor");
 
         vm.stopPrank();
     }

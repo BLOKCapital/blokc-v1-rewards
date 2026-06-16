@@ -22,7 +22,7 @@ abstract contract Events {
     event ContributorAccountCreated(address indexed contributor, address indexed account);
 
     /*//////////////////////////////////////////////////////////////
-                         RewardDistributor
+                         BLOKCDistributor
     //////////////////////////////////////////////////////////////*/
 
     event DistributionProposed(

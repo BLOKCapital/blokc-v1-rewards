@@ -14,7 +14,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BLOKCContributorFactory} from "./factory/BLOKCContributorFactory.sol";
 
-/// @title  RewardDistributor
+/// @title  BLOKCDistributor
 /// @author BLOK Capital DAO
 /// @notice AI-proposed, multisig-approved weekly reward distribution for
 ///         contributor accounts. The AI proposer submits a batch of
@@ -41,7 +41,7 @@ import {BLOKCContributorFactory} from "./factory/BLOKCContributorFactory.sol";
 ///
 ///         Tokens are sent to predicted addresses (not deployed clones)
 ///         — the same pre-fund pattern documented in the factory.
-contract RewardDistributor {
+contract BLOKCDistributor {
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////

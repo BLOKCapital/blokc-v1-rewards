@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 import {BaseTest} from "test/utils/BaseTest.sol";
 
 /// @title  DistributorLifecycleTest
-/// @notice Integration tests for the full RewardDistributor lifecycle:
+/// @notice Integration tests for the full BLOKCDistributor lifecycle:
 ///         propose → approve → execute across multiple epochs.
 contract DistributorLifecycleTest is BaseTest {
     function setUp() public override {
@@ -80,7 +80,7 @@ contract DistributorLifecycleTest is BaseTest {
 
         // Old proposer rejected
         vm.prank(users.aiProposer);
-        vm.expectRevert(RewardDistributor.NotProposer.selector);
+        vm.expectRevert(BLOKCDistributor.NotProposer.selector);
         distributor.proposeDistribution(1, c, a);
 
         // New proposer works
@@ -152,7 +152,7 @@ contract DistributorLifecycleTest is BaseTest {
 
         // Old signer1 is no longer a signer
         vm.prank(users.signer1);
-        vm.expectRevert(RewardDistributor.NotSigner.selector);
+        vm.expectRevert(BLOKCDistributor.NotSigner.selector);
         distributor.approveDistribution(1);
 
         // signer2 and new signer can approve
@@ -187,7 +187,7 @@ contract DistributorLifecycleTest is BaseTest {
         distributor.approveDistribution(1);
 
         // Only 2 of 3 required — cannot execute
-        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
         distributor.executeDistribution(1);
 
         // Third signer pushes it over

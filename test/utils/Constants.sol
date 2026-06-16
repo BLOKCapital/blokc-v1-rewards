@@ -25,7 +25,7 @@ library Constants {
     ///         by `BaseTest._fundAccount` when no amount is specified.
     uint256 internal constant DEFAULT_FUND_AMOUNT = 1_000_000e18;
 
-    /// @notice Default $BLOKC amount minted to the RewardDistributor for
+    /// @notice Default $BLOKC amount minted to the BLOKCDistributor for
     ///         testing (100x a typical weekly distribution so tests never
     ///         hit balance shortages).
     uint256 internal constant DISTRIBUTOR_FUND_AMOUNT = 500_000e18;

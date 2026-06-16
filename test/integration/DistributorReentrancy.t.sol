@@ -3,20 +3,20 @@ pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {MaliciousBLOKC} from "test/mocks/MaliciousBLOKC.sol";
 
 /// @title  DistributorReentrancyTest
-/// @notice Verifies that {RewardDistributor.executeDistribution} is
+/// @notice Verifies that {BLOKCDistributor.executeDistribution} is
 ///         protected against reentrancy via a malicious $BLOKC token
 ///         that calls back into the distributor during a transfer.
 contract DistributorReentrancyTest is Test {
     MaliciousBLOKC internal token;
     BLOKCContributorAccount internal implementation;
     BLOKCContributorFactory internal factory;
-    RewardDistributor internal distributor;
+    BLOKCDistributor internal distributor;
 
     address internal proposer;
     address internal owner;
@@ -41,7 +41,7 @@ contract DistributorReentrancyTest is Test {
         address[] memory signers = new address[](2);
         signers[0] = signer1;
         signers[1] = signer2;
-        distributor = new RewardDistributor(address(token), factory, proposer, owner, signers, 2);
+        distributor = new BLOKCDistributor(address(token), factory, proposer, owner, signers, 2);
 
         // Fund the distributor with the malicious token
         token.mint(address(distributor), FUND_AMOUNT);
@@ -77,7 +77,7 @@ contract DistributorReentrancyTest is Test {
         // AlreadyExecuted (CEI: `dist.executed = true` was set before
         // the loop). The revert bubbles up through transfer →
         // safeTransfer, reverting the outer transaction. State is safe.
-        vm.expectRevert(RewardDistributor.AlreadyExecuted.selector);
+        vm.expectRevert(BLOKCDistributor.AlreadyExecuted.selector);
         distributor.executeDistribution(1);
     }
 }

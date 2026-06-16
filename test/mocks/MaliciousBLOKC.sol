@@ -5,7 +5,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 
 /// @notice Malicious $BLOKC token used to verify the distributor's
 ///         reentrancy protections during {executeDistribution}.
@@ -17,7 +17,7 @@ import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
 ///         block the reentrant call with {AlreadyExecuted}.
 contract MaliciousBLOKC is ERC20, ERC20Votes {
     /// @notice The distributor to re-enter.
-    RewardDistributor public distributor;
+    BLOKCDistributor public distributor;
 
     /// @notice The epoch to re-enter with.
     uint256 public reenterEpoch;
@@ -27,7 +27,7 @@ contract MaliciousBLOKC is ERC20, ERC20Votes {
 
     constructor() ERC20("Malicious BLOKC", "MBLOKC") EIP712("Malicious BLOKC", "1") {}
 
-    function setReentryTarget(RewardDistributor _distributor, uint256 _epochId) external {
+    function setReentryTarget(BLOKCDistributor _distributor, uint256 _epochId) external {
         distributor = _distributor;
         reenterEpoch = _epochId;
     }
