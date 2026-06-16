@@ -26,11 +26,7 @@ abstract contract Events {
     //////////////////////////////////////////////////////////////*/
 
     event DistributionProposed(
-        uint256 indexed epochId,
-        address[] contributors,
-        uint256[] amounts,
-        uint256 totalAmount,
-        uint256 proposedAt
+        uint256 indexed epochId, address[] contributors, uint256[] amounts, uint256 totalAmount, uint256 proposedAt
     );
     event DistributionApproved(uint256 indexed epochId, address indexed signer, uint256 approvalCount);
     event DistributionExecuted(uint256 indexed epochId, uint256 totalAmount, uint256 contributorCount);

@@ -101,11 +101,7 @@ contract RewardDistributor {
     /// @param totalAmount  Sum of all amounts in this distribution.
     /// @param proposedAt   Block timestamp of the proposal.
     event DistributionProposed(
-        uint256 indexed epochId,
-        address[] contributors,
-        uint256[] amounts,
-        uint256 totalAmount,
-        uint256 proposedAt
+        uint256 indexed epochId, address[] contributors, uint256[] amounts, uint256 totalAmount, uint256 proposedAt
     );
 
     /// @notice Emitted when a signer approves a proposed distribution.

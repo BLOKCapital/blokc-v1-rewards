@@ -83,12 +83,7 @@ abstract contract BaseTest is Test, Events {
             distSigners[0] = users.signer1;
             distSigners[1] = users.signer2;
             distributor = new RewardDistributor(
-                address(blokc),
-                factory,
-                users.aiProposer,
-                users.distributorOwner,
-                distSigners,
-                2
+                address(blokc), factory, users.aiProposer, users.distributorOwner, distSigners, 2
             );
         }
         vm.label(address(distributor), "RewardDistributor");
