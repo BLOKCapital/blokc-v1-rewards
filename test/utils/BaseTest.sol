@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
+import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
 
 import {MockBLOKC} from "test/mocks/MockBLOKC.sol";
 
@@ -39,6 +40,9 @@ abstract contract BaseTest is Test, Events {
     ///         and `Constants.UNLOCK_TIMESTAMP`.
     BLOKCContributorFactory internal factory;
 
+    /// @notice Reward distributor with AI proposer + 2-of-2 multisig.
+    BLOKCDistributor internal distributor;
+
     /*//////////////////////////////////////////////////////////////
                                 SETUP
     //////////////////////////////////////////////////////////////*/
@@ -54,7 +58,11 @@ abstract contract BaseTest is Test, Events {
             otherContributor: _user("otherContributor"),
             attacker: _user("attacker"),
             recipient: _user("recipient"),
-            goodSamaritan: _user("goodSamaritan")
+            goodSamaritan: _user("goodSamaritan"),
+            aiProposer: _user("aiProposer"),
+            distributorOwner: _user("distributorOwner"),
+            signer1: _user("signer1"),
+            signer2: _user("signer2")
         });
 
         // 3. Deploy rails as the deployer for realistic msg.sender in traces.
@@ -68,6 +76,16 @@ abstract contract BaseTest is Test, Events {
 
         factory = new BLOKCContributorFactory(address(blokc), address(implementation), Constants.UNLOCK_TIMESTAMP);
         vm.label(address(factory), "Factory");
+
+        // 4. Deploy the reward distributor with 2-of-2 multisig.
+        {
+            address[] memory distSigners = new address[](2);
+            distSigners[0] = users.signer1;
+            distSigners[1] = users.signer2;
+            distributor =
+                new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, distSigners);
+        }
+        vm.label(address(distributor), "BLOKCDistributor");
 
         vm.stopPrank();
     }
@@ -120,5 +138,26 @@ abstract contract BaseTest is Test, Events {
     /// @notice Warp to one second before unlock (boundary tests).
     function _warpToJustBeforeUnlock() internal {
         vm.warp(Constants.PRE_UNLOCK);
+    }
+
+    /// @notice Fund the distributor with enough $BLOKC for multiple epochs.
+    function _fundDistributor() internal {
+        _fundDistributor(Constants.DISTRIBUTOR_FUND_AMOUNT);
+    }
+
+    function _fundDistributor(uint256 amount) internal {
+        blokc.mint(address(distributor), amount);
+    }
+
+    /// @notice Create contributor accounts for a batch of synthetic addresses.
+    /// @param count Number of contributors to create.
+    /// @return contributors The array of contributor addresses.
+    function _createContributors(uint256 count) internal returns (address[] memory contributors) {
+        contributors = new address[](count);
+        for (uint256 i = 0; i < count; ++i) {
+            contributors[i] = address(uint160(0x1000 + i));
+            vm.prank(contributors[i]);
+            factory.createContributorAccount();
+        }
     }
 }

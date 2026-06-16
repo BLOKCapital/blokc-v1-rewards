@@ -20,4 +20,20 @@ abstract contract Events {
     //////////////////////////////////////////////////////////////*/
 
     event ContributorAccountCreated(address indexed contributor, address indexed account);
+
+    /*//////////////////////////////////////////////////////////////
+                         BLOKCDistributor
+    //////////////////////////////////////////////////////////////*/
+
+    event DistributionProposed(
+        uint256 indexed epochId, uint256 indexed totalAmount, address[] contributors, uint256[] amounts
+    );
+    event DistributionApproved(uint256 indexed epochId, address indexed signer, uint256 approvalCount);
+    event DistributionExecuted(uint256 indexed epochId, uint256 totalAmount, uint256 contributorCount);
+    event DistributionCancelled(uint256 indexed epochId);
+    event SignerAdded(address indexed signer);
+    event SignerRemoved(address indexed signer);
+    event ProposerUpdated(address indexed oldProposer, address indexed newProposer);
+    event OwnerUpdated(address indexed oldOwner, address indexed newOwner);
+    event TokensRecovered(address indexed recoveredToken, address indexed to, uint256 amount);
 }
