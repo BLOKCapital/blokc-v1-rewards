@@ -60,6 +60,11 @@ contract RewardDistributor {
     /// @notice The admin address that manages signers, proposer and threshold.
     address public owner;
 
+    /// @notice The minimum number of approvals required — even the owner cannot
+    ///         drop the threshold below this. Defense-in-depth against a
+    ///         compromised DAO multisig.
+    uint256 public constant MIN_THRESHOLD = 2;
+
     /// @notice The number of signer approvals required to execute a distribution.
     uint256 public threshold;
 
@@ -96,16 +101,12 @@ contract RewardDistributor {
 
     /// @notice Emitted when the AI proposer submits a new distribution.
     /// @param epochId      The epoch identifier.
+    /// @param totalAmount  Sum of all amounts in this distribution (indexed
+    ///                     for gas-efficient off-chain filtering).
     /// @param contributors The contributor addresses in this distribution.
     /// @param amounts      The reward amount for each contributor (in wei).
-    /// @param totalAmount  Sum of all amounts in this distribution.
-    /// @param proposedAt   Block timestamp of the proposal.
     event DistributionProposed(
-        uint256 indexed epochId,
-        uint256 indexed totalAmount,
-        address[] contributors,
-        uint256[] amounts,
-        uint256 proposedAt
+        uint256 indexed epochId, uint256 indexed totalAmount, address[] contributors, uint256[] amounts
     );
 
     /// @notice Emitted when a signer approves a proposed distribution.
@@ -279,7 +280,7 @@ contract RewardDistributor {
             totalAmount += amounts[i];
         }
 
-        emit DistributionProposed(epochId, totalAmount, contributors, amounts, block.timestamp);
+        emit DistributionProposed(epochId, totalAmount, contributors, amounts);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -421,7 +422,7 @@ contract RewardDistributor {
     /// @param _newThreshold The new threshold. Must be non-zero and not
     ///                      exceed the current number of signers.
     function updateThreshold(uint256 _newThreshold) external onlyOwner {
-        if (_newThreshold == 0) revert ZeroThreshold();
+        if (_newThreshold < MIN_THRESHOLD) revert InsufficientApprovals();
         if (_newThreshold > signers.length) revert InsufficientApprovals();
         if (_newThreshold == threshold) revert SameAddress();
 

@@ -293,7 +293,7 @@ contract RewardDistributorTest is BaseTest {
         a[1] = 200e18;
 
         vm.expectEmit(true, true, false, true, address(distributor));
-        emit DistributionProposed(1, 500e18, c, a, block.timestamp);
+        emit DistributionProposed(1, 500e18, c, a);
 
         _propose(1, c, a);
     }
@@ -761,12 +761,12 @@ contract RewardDistributorTest is BaseTest {
         distributor.updateThreshold(1);
     }
 
-    /// @notice Asserts {updateThreshold} reverts with {ZeroThreshold} when
-    ///         new threshold is zero.
-    function test_updateThreshold_revertWhen_ZeroThreshold() public {
+    /// @notice Asserts {updateThreshold} reverts with {InsufficientApprovals}
+    ///         when the new threshold is below MIN_THRESHOLD (2).
+    function test_updateThreshold_revertWhen_BelowMinThreshold() public {
         vm.prank(users.distributorOwner);
-        vm.expectRevert(RewardDistributor.ZeroThreshold.selector);
-        distributor.updateThreshold(0);
+        vm.expectRevert(RewardDistributor.InsufficientApprovals.selector);
+        distributor.updateThreshold(1);
     }
 
     /// @notice Asserts {updateThreshold} reverts when threshold exceeds
