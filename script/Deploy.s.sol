@@ -4,6 +4,7 @@ pragma solidity 0.8.33;
 import {Script, console} from "forge-std/Script.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
+import {RewardDistributor} from "src/contracts/RewardDistributor.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title Deploy
@@ -51,9 +52,31 @@ contract Deploy is Script {
         console.log("  _unlockTimestamp:", UNLOCK_TIMESTAMP);
         console.log("---");
 
-        // 5. Predict the first contributor address as a smoke test.
+        // 5. Deploy the RewardDistributor.
+        address aiProposer = vm.envAddress("AI_PROPOSER");
+        address distributorOwner = vm.envAddress("DISTRIBUTOR_OWNER");
+        address[] memory distSigners = new address[](2);
+        distSigners[0] = vm.envAddress("DISTRIBUTOR_SIGNER_1");
+        distSigners[1] = vm.envAddress("DISTRIBUTOR_SIGNER_2");
+        RewardDistributor distributor =
+            new RewardDistributor(blokcToken, factory, aiProposer, distributorOwner, distSigners, 2);
+        console.log("RewardDistributor deployed:", address(distributor));
+
+        // 6. Log constructor args for RewardDistributor verification.
+        console.log("---");
+        console.log("Constructor args for RewardDistributor:");
+        console.log("  _token:", blokcToken);
+        console.log("  _factory:", address(factory));
+        console.log("  _proposer:", aiProposer);
+        console.log("  _owner:", distributorOwner);
+        console.log("  _signers[0]:", distSigners[0]);
+        console.log("  _signers[1]:", distSigners[1]);
+        console.log("  _threshold: 2");
+        console.log("---");
+
+        // 7. Smoke test: predict the first contributor address.
         //    This address can receive $BLOKC immediately, even before the
-        //    account is deployed, the clone inherits whatever sits at its
+        //    account is deployed — the clone inherits whatever sits at its
         //    deterministic CREATE2 address.
         address firstContributor = vm.envOr("FIRST_CONTRIBUTOR", address(0x1));
         address predicted = factory.predictContributorAccount(firstContributor);
