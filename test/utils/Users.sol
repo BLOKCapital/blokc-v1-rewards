@@ -18,4 +18,12 @@ struct Users {
     /// @notice Permissionless caller used in factory tests where someone
     ///         other than the contributor deploys the account.
     address payable goodSamaritan;
+    /// @notice AI wallet authorized to propose reward distributions.
+    address payable aiProposer;
+    /// @notice Admin address that manages signers and the proposer.
+    address payable distributorOwner;
+    /// @notice First designated signer for reward distribution approvals.
+    address payable signer1;
+    /// @notice Second designated signer for reward distribution approvals.
+    address payable signer2;
 }
