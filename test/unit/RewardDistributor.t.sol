@@ -149,7 +149,7 @@ contract RewardDistributorTest is BaseTest {
         address[] memory s = new address[](2);
         s[0] = users.signer1;
         s[1] = users.signer1;
-        vm.expectRevert(RewardDistributor.AlreadyApproved.selector);
+        vm.expectRevert(RewardDistributor.DuplicateSigner.selector);
         new RewardDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s, 2);
     }
 
@@ -285,15 +285,15 @@ contract RewardDistributorTest is BaseTest {
     }
 
     /// @notice Asserts {proposeDistribution} emits {DistributionProposed}
-    ///         with correct fields.
+    ///         with correct indexed fields (epochId and totalAmount).
     function test_propose_emitsDistributionProposed() public {
         address[] memory c = _contributors(2);
         uint256[] memory a = new uint256[](2);
         a[0] = 300e18;
         a[1] = 200e18;
 
-        vm.expectEmit(true, false, false, true, address(distributor));
-        emit DistributionProposed(1, c, a, 500e18, block.timestamp);
+        vm.expectEmit(true, true, false, true, address(distributor));
+        emit DistributionProposed(1, 500e18, c, a, block.timestamp);
 
         _propose(1, c, a);
     }

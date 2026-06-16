@@ -101,7 +101,11 @@ contract RewardDistributor {
     /// @param totalAmount  Sum of all amounts in this distribution.
     /// @param proposedAt   Block timestamp of the proposal.
     event DistributionProposed(
-        uint256 indexed epochId, address[] contributors, uint256[] amounts, uint256 totalAmount, uint256 proposedAt
+        uint256 indexed epochId,
+        uint256 indexed totalAmount,
+        address[] contributors,
+        uint256[] amounts,
+        uint256 proposedAt
     );
 
     /// @notice Emitted when a signer approves a proposed distribution.
@@ -166,6 +170,7 @@ contract RewardDistributor {
     error DistributionNotFound();
     error AlreadyExecuted();
     error AlreadyApproved();
+    error DuplicateSigner();
     error InsufficientApprovals();
     error InsufficientBalance();
     error SameAddress();
@@ -227,7 +232,7 @@ contract RewardDistributor {
         for (uint256 i = 0; i < _signers.length; ++i) {
             address signer = _signers[i];
             if (signer == address(0)) revert ZeroAddress();
-            if (isSigner[signer]) revert AlreadyApproved(); // reuse: duplicate signer
+            if (isSigner[signer]) revert DuplicateSigner();
             isSigner[signer] = true;
             signers.push(signer);
             emit SignerAdded(signer);
@@ -274,7 +279,7 @@ contract RewardDistributor {
             totalAmount += amounts[i];
         }
 
-        emit DistributionProposed(epochId, contributors, amounts, totalAmount, block.timestamp);
+        emit DistributionProposed(epochId, totalAmount, contributors, amounts, block.timestamp);
     }
 
     /*//////////////////////////////////////////////////////////////
