@@ -85,6 +85,7 @@ contract BLOKCDistributor {
         address[] contributors;
         uint256[] amounts;
         uint256 approvalCount;
+        uint256 requiredApprovals;
         bool executed;
         uint256 proposedAt;
     }
@@ -257,6 +258,7 @@ contract BLOKCDistributor {
         uint256 totalAmount;
         dist.contributors = contributors;
         dist.amounts = amounts;
+        dist.requiredApprovals = signers.length;
         dist.proposedAt = block.timestamp;
 
         for (uint256 i = 0; i < length; ++i) {
@@ -308,7 +310,7 @@ contract BLOKCDistributor {
         Distribution storage dist = distributions[epochId];
         if (dist.proposedAt == 0) revert DistributionNotFound();
         if (dist.executed) revert AlreadyExecuted();
-        if (dist.approvalCount < signers.length) revert InsufficientApprovals();
+        if (dist.approvalCount < dist.requiredApprovals) revert InsufficientApprovals();
 
         uint256 length = dist.contributors.length;
         uint256 totalAmount;

@@ -95,7 +95,7 @@ contract DistributorFuzzTest is BaseTest {
             _approveAs(1, users.signer1);
         }
 
-        (uint256 count,,) = distributor.distributions(1);
+        (uint256 count,,,) = distributor.distributions(1);
         assertEq(count, 2);
 
         distributor.executeDistribution(1);

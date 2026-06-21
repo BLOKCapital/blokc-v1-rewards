@@ -267,7 +267,7 @@ contract BLOKCDistributorTest is BaseTest {
 
         assertTrue(distributor.isEpochProposed(1));
         assertFalse(distributor.isEpochExecuted(1));
-        (uint256 appCount, bool executed, uint256 proposedAt) = distributor.distributions(1);
+        (uint256 appCount,, bool executed, uint256 proposedAt) = distributor.distributions(1);
         assertEq(appCount, 0);
         assertFalse(executed);
         assertTrue(proposedAt > 0);
@@ -354,12 +354,12 @@ contract BLOKCDistributorTest is BaseTest {
         _propose(1, _contributors(1), _amounts(1, 100e18));
 
         _approve(1, users.signer1);
-        (uint256 count1,,) = distributor.distributions(1);
+        (uint256 count1,,,) = distributor.distributions(1);
         assertEq(count1, 1);
         assertTrue(distributor.approvals(1, users.signer1));
 
         _approve(1, users.signer2);
-        (uint256 count2,,) = distributor.distributions(1);
+        (uint256 count2,,,) = distributor.distributions(1);
         assertEq(count2, 2);
         assertTrue(distributor.approvals(1, users.signer2));
     }
@@ -531,7 +531,7 @@ contract BLOKCDistributorTest is BaseTest {
         _proposeApproveAndExecute(1, _contributors(1), _amounts(1, 100e18));
 
         assertTrue(distributor.isEpochExecuted(1));
-        (, bool executed,) = distributor.distributions(1);
+        (,, bool executed,) = distributor.distributions(1);
         assertTrue(executed);
     }
 
@@ -583,7 +583,7 @@ contract BLOKCDistributorTest is BaseTest {
         _propose(1, c, a);
 
         assertTrue(distributor.isEpochProposed(1));
-        (uint256 appCount,,) = distributor.distributions(1);
+        (uint256 appCount,,,) = distributor.distributions(1);
         assertEq(appCount, 0);
     }
 
@@ -699,6 +699,39 @@ contract BLOKCDistributorTest is BaseTest {
         assertFalse(distributor.isSigner(users.signer1));
         assertEq(distributor.getSignerCount(), before - 1);
         vm.stopPrank();
+    }
+
+    /// @notice Asserts that removing a non-approving signer does NOT
+    ///         make a pending distribution executable. requiredApprovals
+    ///         is frozen at proposal time, so the removed signer's
+    ///         approval is still required.
+    function test_removeSigner_doesNotBypassPendingApprovals() public {
+        // Deploy fresh distributor with 3 signers
+        address[] memory s = new address[](3);
+        s[0] = users.signer1;
+        s[1] = users.signer2;
+        s[2] = _contributor(99);
+        BLOKCDistributor d = new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
+        blokc.mint(address(d), 1000e18);
+
+        // Propose
+        vm.prank(users.aiProposer);
+        d.proposeDistribution(1, _contributors(1), _amounts(1, 100e18));
+
+        // 2 of 3 approve (signer1 + signer2)
+        vm.prank(users.signer1);
+        d.approveDistribution(1);
+        vm.prank(users.signer2);
+        d.approveDistribution(1);
+
+        // Remove signer 3 (who hasn't approved)
+        vm.prank(users.distributorOwner);
+        d.removeSigner(s[2]);
+
+        // Execution must STILL revert — requiredApprovals was frozen at 3
+        // at proposal time, and only 2 approvals exist
+        vm.expectRevert(BLOKCDistributor.InsufficientApprovals.selector);
+        d.executeDistribution(1);
     }
 
     /*//////////////////////////////////////////////////////////////
