@@ -88,6 +88,7 @@ contract BLOKCDistributor {
         uint256 requiredApprovals;
         bool executed;
         uint256 proposedAt;
+        address[] signerSnapshot; // signer identities AT proposal time (not just count)
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -161,6 +162,7 @@ contract BLOKCDistributor {
     error AlreadyExecuted();
     error AlreadyApproved();
     error DuplicateSigner();
+    error DuplicateContributor(); // same contributor appears twice in a proposal
     error InsufficientSigners(); // fewer than 2 signers
     error InsufficientApprovals(); // not all signers have approved
     error InsufficientBalance();
@@ -259,11 +261,16 @@ contract BLOKCDistributor {
         dist.contributors = contributors;
         dist.amounts = amounts;
         dist.requiredApprovals = signers.length;
+        dist.signerSnapshot = signers; // snapshot signer identities at proposal time
         dist.proposedAt = block.timestamp;
 
         for (uint256 i = 0; i < length; ++i) {
             if (contributors[i] == address(0)) revert ZeroAddress();
             if (amounts[i] == 0) revert ZeroAmount();
+            // Check for duplicate contributors (on-chain defense against double-payment)
+            for (uint256 j = 0; j < i; ++j) {
+                if (contributors[i] == contributors[j]) revert DuplicateContributor();
+            }
             totalAmount += amounts[i];
         }
 
@@ -279,10 +286,22 @@ contract BLOKCDistributor {
     ///         auto-execute — execution is a separate permissionless call
     ///         so gas costs don't land on the last signer.
     /// @param epochId The epoch to approve.
-    function approveDistribution(uint256 epochId) external onlySigner {
+    function approveDistribution(uint256 epochId) external {
         Distribution storage dist = distributions[epochId];
         if (dist.proposedAt == 0) revert DistributionNotFound();
         if (dist.executed) revert AlreadyExecuted();
+
+        // Verify msg.sender is in the proposal-time signer snapshot (not current signer set)
+        bool isProposalSigner;
+        uint256 snapshotLen = dist.signerSnapshot.length;
+        for (uint256 i = 0; i < snapshotLen; ++i) {
+            if (dist.signerSnapshot[i] == msg.sender) {
+                isProposalSigner = true;
+                break;
+            }
+        }
+        if (!isProposalSigner) revert NotSigner();
+
         if (approvals[epochId][msg.sender]) revert AlreadyApproved();
 
         approvals[epochId][msg.sender] = true;
@@ -346,9 +365,10 @@ contract BLOKCDistributor {
         if (dist.proposedAt == 0) revert DistributionNotFound();
         if (dist.executed) revert AlreadyExecuted();
 
-        uint256 len = signers.length;
+        // Clear approvals for ALL signers in the proposal-time snapshot (not current signers)
+        uint256 len = dist.signerSnapshot.length;
         for (uint256 i = 0; i < len; ++i) {
-            delete approvals[epochId][signers[i]];
+            delete approvals[epochId][dist.signerSnapshot[i]];
         }
 
         delete distributions[epochId];
