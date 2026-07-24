@@ -111,18 +111,30 @@ contract BLOKCDistributorTest is BaseTest {
 
     /// @notice Asserts the constructor reverts with {InsufficientSigners}
     ///         when fewer than 2 signers are provided.
-    function test_constructor_revertWhen_TooFewSigners() public {
+    function test_constructor_allowsFewerThanTwoSigners() public {
         address[] memory s = _signers(1);
-        vm.expectRevert(BLOKCDistributor.InsufficientSigners.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
+        BLOKCDistributor d = new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
+        assertEq(d.getSignerCount(), 1);
     }
 
-    /// @notice Asserts the constructor reverts with {InsufficientSigners}
-    ///         when `_signers` is empty.
-    function test_constructor_revertWhen_SignersEmpty() public {
+    function test_constructor_allowsEmptySigners() public {
         address[] memory s = new address[](0);
+        BLOKCDistributor d = new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
+        assertEq(d.getSignerCount(), 0);
+    }
+
+    function test_proposeDistribution_revertWhen_InsufficientSigners() public {
+        BLOKCDistributor d =
+            new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, new address[](0));
+
+        address[] memory c = new address[](1);
+        c[0] = users.contributor;
+        uint256[] memory a = new uint256[](1);
+        a[0] = 100e18;
+
+        vm.prank(users.aiProposer);
         vm.expectRevert(BLOKCDistributor.InsufficientSigners.selector);
-        new BLOKCDistributor(address(blokc), factory, users.aiProposer, users.distributorOwner, s);
+        d.proposeDistribution(1, c, a);
     }
 
     /// @notice Asserts the constructor reverts with {ZeroAddress} when a

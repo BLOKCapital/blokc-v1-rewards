@@ -206,8 +206,6 @@ contract BLOKCDistributor {
         if (address(_factory) == address(0)) revert ZeroAddress();
         if (_proposer == address(0)) revert ZeroAddress();
         if (_owner == address(0)) revert ZeroAddress();
-        if (_signers.length < 2) revert InsufficientSigners();
-
         token = _token;
         factory = _factory;
         proposer = _proposer;
@@ -251,6 +249,7 @@ contract BLOKCDistributor {
 
         Distribution storage dist = distributions[epochId];
         if (dist.proposedAt != 0) revert AlreadyProposed();
+        if (signers.length < 2) revert InsufficientSigners();
 
         uint256 totalAmount;
         dist.contributors = contributors;
