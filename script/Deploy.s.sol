@@ -5,29 +5,32 @@ import {Script, console} from "forge-std/Script.sol";
 import {BLOKCContributorAccount} from "src/contracts/BLOKCContributorAccount.sol";
 import {BLOKCContributorFactory} from "src/contracts/factory/BLOKCContributorFactory.sol";
 import {BLOKCDistributor} from "src/contracts/BLOKCDistributor.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /// @title Deploy
-/// @notice
-///         Pre-requisites:
-///           - BLOKC_TOKEN environment variable set to the canonical $BLOKC
-///             ERC20Votes token address.
-///           - DEPLOYER_KEY or --ledger/--trezor for the deployer account.
-///           - Etherscan API key in ETHERSCAN_API_KEY env var for verify.
+/// @notice Deploys the full BLOKC rewards protocol. Signers are added later
+///         through DAO governance votes, so the distributor starts with an
+///         empty signer array.
+///
+///         Required env vars:
+///           BLOKC_TOKEN       - canonical $BLOKC ERC20Votes token address
+///           AI_PROPOSER       - AI agent's EOA wallet
+///           DISTRIBUTOR_OWNER - DAO multisig / Aragon agent address
 ///
 ///         The unlock timestamp is hardcoded: 1 May 2027 00:00:00 UTC.
 ///         Verify with: date -u -d 1809734400
 contract Deploy is Script {
-    /// @notice Production unlock timestamp (1 May 2027 00:00:00 UTC).
     uint64 internal constant UNLOCK_TIMESTAMP = 1_809_734_400;
 
     function run() external {
         address blokcToken = vm.envAddress("BLOKC_TOKEN");
+        address aiProposer = vm.envAddress("AI_PROPOSER");
+        address distributorOwner = vm.envAddress("DISTRIBUTOR_OWNER");
 
         vm.startBroadcast();
 
         // 1. Deploy the account implementation. Its constructor calls
-        //    _disableInitializers()
+        //    _disableInitializers() so the implementation itself can never
+        //    be initialized directly - only EIP-1167 clones can.
         BLOKCContributorAccount implementation = new BLOKCContributorAccount();
         console.log("BLOKCContributorAccount implementation:", address(implementation));
 
@@ -38,49 +41,29 @@ contract Deploy is Script {
             console.log("Implementation locked: direct initialize() reverted (OK)");
         }
 
-        // 3. Deploy the factory. Bound to this token + implementation +
-        //    unlock date.
+        // 3. Deploy the factory. Bound to the token, implementation, and
+        //    unlock date. All three are immutable.
         BLOKCContributorFactory factory =
             new BLOKCContributorFactory(blokcToken, address(implementation), UNLOCK_TIMESTAMP);
-        console.log("BLOKCContributorFactory deployed:", address(factory));
-
-        // 4. Log constructor args for Etherscan verification.
-        console.log("---");
-        console.log("Constructor args for BLOKCContributorFactory:");
+        console.log("BLOKCContributorFactory:", address(factory));
         console.log("  _token:", blokcToken);
         console.log("  _implementation:", address(implementation));
         console.log("  _unlockTimestamp:", UNLOCK_TIMESTAMP);
-        console.log("---");
 
-        // 5. Deploy the BLOKCDistributor.
-        address aiProposer = vm.envAddress("AI_PROPOSER");
-        address distributorOwner = vm.envAddress("DISTRIBUTOR_OWNER");
-        address[] memory distSigners = new address[](2);
-        distSigners[0] = vm.envAddress("DISTRIBUTOR_SIGNER_1");
-        distSigners[1] = vm.envAddress("DISTRIBUTOR_SIGNER_2");
+        // 4. Deploy the distributor with an empty signer array. Signers are
+        //    added through DAO governance votes after deployment. No
+        //    distribution can be proposed until at least 2 signers exist.
+        address[] memory signers = new address[](0);
         BLOKCDistributor distributor =
-            new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, distSigners);
-        console.log("BLOKCDistributor deployed:", address(distributor));
-
-        // 6. Log constructor args for BLOKCDistributor verification.
-        console.log("---");
-        console.log("Constructor args for BLOKCDistributor:");
+            new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, signers);
+        console.log("BLOKCDistributor:", address(distributor));
         console.log("  _token:", blokcToken);
         console.log("  _factory:", address(factory));
         console.log("  _proposer:", aiProposer);
         console.log("  _owner:", distributorOwner);
-        console.log("  _signers[0]:", distSigners[0]);
-        console.log("  _signers[1]:", distSigners[1]);
-        console.log("---");
-
-        // 7. Smoke test: predict the first contributor address.
-        //    This address can receive $BLOKC immediately, even before the
-        //    account is deployed — the clone inherits whatever sits at its
-        //    deterministic CREATE2 address.
-        address firstContributor = vm.envOr("FIRST_CONTRIBUTOR", address(0x1));
-        address predicted = factory.predictContributorAccount(firstContributor);
-        console.log("Predicted account for", firstContributor, ":", predicted);
+        console.log("  _signers: [] (empty - add via DAO votes)");
 
         vm.stopBroadcast();
+        console.log("Deploy complete.");
     }
 }
