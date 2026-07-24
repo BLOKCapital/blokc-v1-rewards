@@ -177,11 +177,6 @@ contract BLOKCDistributor {
         _;
     }
 
-    modifier onlySigner() {
-        if (!isSigner[msg.sender]) revert NotSigner();
-        _;
-    }
-
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
         _;
