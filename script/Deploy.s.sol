@@ -54,8 +54,7 @@ contract Deploy is Script {
         //    added through DAO governance votes after deployment. No
         //    distribution can be proposed until at least 2 signers exist.
         address[] memory signers = new address[](0);
-        BLOKCDistributor distributor =
-            new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, signers);
+        BLOKCDistributor distributor = new BLOKCDistributor(blokcToken, factory, aiProposer, distributorOwner, signers);
         console.log("BLOKCDistributor:", address(distributor));
         console.log("  _token:", blokcToken);
         console.log("  _factory:", address(factory));
